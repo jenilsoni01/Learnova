@@ -58,7 +58,7 @@ export const getPublicCourses = async (req, res) => {
   try {
     const { search } = req.query;
     const page  = parseInt(req.query.page)  || 1;
-    const limit = parseInt(req.query.limit) || 10;
+    const limit = parseInt(req.query.limit) || 5;
     const skip  = (page - 1) * limit;
     const authUser = req.user;
 
@@ -126,7 +126,7 @@ export const getPublicCourses = async (req, res) => {
 export const getAdminCourses = async (req, res) => {
   try {
     const page  = parseInt(req.query.page)  || 1;
-    const limit = parseInt(req.query.limit) || 10;
+    const limit = parseInt(req.query.limit) || 5;
     const skip  = (page - 1) * limit;
     const { search } = req.query;
 
@@ -174,7 +174,12 @@ export const getAdminCourses = async (req, res) => {
 
 export const createCourse = async (req, res) => {
   try {
-    const course = await Course.create({ ...req.body, createdBy: req.user._id });
+    const payload = { ...req.body };
+    if (payload.accessRule !== 'payment') {
+      payload.price = 0;
+    }
+
+    const course = await Course.create({ ...payload, createdBy: req.user._id });
     return res.status(201).json(course);
   } catch (error) {
     return res.status(500).json({ message: error.message });
@@ -241,7 +246,12 @@ export const updateCourse = async (req, res) => {
       return res.status(403).json({ message: 'Not authorized to update this course' });
     }
 
-    const updated = await Course.findByIdAndUpdate(req.params.id, req.body, {
+    const payload = { ...req.body };
+    if (payload.accessRule !== 'payment') {
+      payload.price = 0;
+    }
+
+    const updated = await Course.findByIdAndUpdate(req.params.id, payload, {
       new: true,
       runValidators: true,
     });

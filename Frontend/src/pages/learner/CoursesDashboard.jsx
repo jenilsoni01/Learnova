@@ -4,9 +4,6 @@ import { useAuth } from '../../context/AuthContext';
 import Navbar from '../../components/common/Navbar';
 import CourseCard from '../../components/common/CourseCard';
 import { SkeletonCard } from '../../components/common/Skeleton';
-import useInfiniteScroll from '../../hooks/useInfiniteScroll';
-import LoadingSpinner from '../../components/common/LoadingSpinner';
-import EndMessage from '../../components/common/EndMessage';
 import ErrorRetry from '../../components/common/ErrorRetry';
 import Toast from '../../components/common/Toast';
 import './CoursesDashboard.css';
@@ -27,6 +24,13 @@ const CoursesDashboard = () => {
   const [categoryFilter, setCategoryFilter] = useState('');
   const [viewMode, setViewMode] = useState('grid');
   const [isProfileOpen, setIsProfileOpen] = useState(false);
+  const [courses, setCourses] = useState([]);
+  const [isLoading, setIsLoading] = useState(false);
+  const [error, setError] = useState(null);
+  const [currentPage, setCurrentPage] = useState(1);
+  const [limit, setLimit] = useState(5);
+  const [totalPages, setTotalPages] = useState(1);
+  const [pageInput, setPageInput] = useState('1');
   const [myInvitations, setMyInvitations] = useState([]);
   const [invitesLoading, setInvitesLoading] = useState(false);
   const [toast, setToast] = useState(null);
@@ -44,15 +48,33 @@ const CoursesDashboard = () => {
       : BADGES[0].name;
   };
 
-  const fetchCourses = useCallback(async (page) => {
-    const params = { page, limit: 10 };
-    if (debouncedSearch.trim()) params.search = debouncedSearch.trim();
-    const { data } = await api.get('/courses/public', { params });
-    return data; // { data: [...], pagination: {...} }
-  }, [debouncedSearch]);
+  const fetchCourses = useCallback(async () => {
+    try {
+      setIsLoading(true);
+      setError(null);
+      const params = { page: currentPage, limit };
+      if (debouncedSearch.trim()) params.search = debouncedSearch.trim();
+      const { data } = await api.get('/courses/public', { params });
+      setCourses(Array.isArray(data?.data) ? data.data : []);
+      setTotalPages(data?.pagination?.totalPages || 1);
+    } catch (err) {
+      setError('Failed to load courses. Please try again.');
+    } finally {
+      setIsLoading(false);
+    }
+  }, [currentPage, debouncedSearch, limit]);
 
-  const { items: courses, isLoading, hasMore, error, sentinelRef, loadMore } =
-    useInfiniteScroll(fetchCourses, [debouncedSearch]);
+  useEffect(() => {
+    fetchCourses();
+  }, [fetchCourses]);
+
+  useEffect(() => {
+    setCurrentPage(1);
+  }, [debouncedSearch, limit]);
+
+  useEffect(() => {
+    setPageInput(String(currentPage));
+  }, [currentPage]);
 
   const fetchInvitations = useCallback(async () => {
     if (!user || user.role !== 'learner') {
@@ -79,7 +101,8 @@ const CoursesDashboard = () => {
       await api.post(`/enrollments/invitations/${invitationId}/accept`);
       setToast({ message: 'Invitation accepted! You are now enrolled.', type: 'success' });
       fetchInvitations();
-      loadMore(1);
+      setCurrentPage(1);
+      fetchCourses();
     } catch (err) {
       setToast({ message: err.response?.data?.message || 'Failed to accept invitation', type: 'error' });
     }
@@ -208,11 +231,47 @@ const CoursesDashboard = () => {
             </div>
           )}
 
-          {/* Sentinel + infinite scroll states */}
-          <div ref={sentinelRef} style={{ height: '1rem' }} />
-          {isLoading && courses.length > 0 && <LoadingSpinner />}
-          {!hasMore && courses.length > 0 && <EndMessage />}
-          {error && <ErrorRetry onRetry={() => loadMore(1)} />}
+          {error && <ErrorRetry onRetry={fetchCourses} />}
+
+          <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', marginTop: '1rem', gap: '0.75rem', flexWrap: 'wrap' }}>
+            <div style={{ display: 'flex', alignItems: 'center', gap: '0.4rem' }}>
+              <span style={{ fontSize: '0.85rem' }}>Per page</span>
+              <select
+                className="form-input"
+                style={{ width: '80px', padding: '0.45rem' }}
+                value={limit}
+                onChange={(e) => setLimit(Number(e.target.value))}
+              >
+                <option value={5}>5</option>
+                <option value={10}>10</option>
+                <option value={20}>20</option>
+              </select>
+            </div>
+
+            <div style={{ display: 'flex', alignItems: 'center', gap: '0.4rem' }}>
+              <button className="btn btn-secondary btn-sm" disabled={currentPage <= 1} onClick={() => setCurrentPage((p) => Math.max(1, p - 1))}>Prev</button>
+              <span style={{ fontSize: '0.85rem' }}>Page {currentPage} / {totalPages}</span>
+              <button className="btn btn-secondary btn-sm" disabled={currentPage >= totalPages} onClick={() => setCurrentPage((p) => Math.min(totalPages, p + 1))}>Next</button>
+            </div>
+
+            <div style={{ display: 'flex', alignItems: 'center', gap: '0.35rem' }}>
+              <input
+                className="form-input"
+                style={{ width: '70px', padding: '0.45rem' }}
+                value={pageInput}
+                onChange={(e) => setPageInput(e.target.value)}
+              />
+              <button
+                className="btn btn-primary btn-sm"
+                onClick={() => {
+                  const page = Math.max(1, Math.min(totalPages, Number(pageInput) || 1));
+                  setCurrentPage(page);
+                }}
+              >
+                Go
+              </button>
+            </div>
+          </div>
         </div>
 
         {/* Mobile toggle */}

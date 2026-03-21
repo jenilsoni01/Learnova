@@ -244,7 +244,7 @@ const CourseBuilder = () => {
       const payload = {
         ...courseData,
         tags: courseData.tags.split(',').map(t => t.trim()).filter(Boolean),
-        price: Number(courseData.price) || 0
+        price: courseData.accessRule === 'payment' ? (Number(courseData.price) || 0) : 0
       };
       if (isEdit || courseId) {
         await api.put(`/courses/${courseId}`, payload);
@@ -505,9 +505,19 @@ const CourseBuilder = () => {
             </div>
             <div className="builder-nav" style={{ marginTop: '1.5rem' }}>
               <button className="btn btn-secondary" onClick={() => navigate('/instructor')}>Cancel</button>
-              <button className="btn btn-primary" onClick={handleSaveCourse} disabled={saving}>
-                {saving ? 'Saving...' : 'Save & Continue →'}
-              </button>
+              <div style={{ display: 'flex', gap: '0.5rem' }}>
+                {activeCourseId && (
+                  <button
+                    className="btn btn-secondary"
+                    onClick={() => window.open(`/courses/${activeCourseId}`, '_blank')}
+                  >
+                    👁️ Preview
+                  </button>
+                )}
+                <button className="btn btn-primary" onClick={handleSaveCourse} disabled={saving}>
+                  {saving ? 'Saving...' : 'Save & Continue →'}
+                </button>
+              </div>
             </div>
 
             {courseData.accessRule === 'invitation' && (courseId || isEdit) && (

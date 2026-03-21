@@ -3,9 +3,6 @@ import { useNavigate } from 'react-router-dom';
 import api from '../../api/axios';
 import Navbar from '../../components/common/Navbar';
 import Toast from '../../components/common/Toast';
-import useInfiniteScroll from '../../hooks/useInfiniteScroll';
-import LoadingSpinner from '../../components/common/LoadingSpinner';
-import EndMessage from '../../components/common/EndMessage';
 import './InstructorDashboard.css';
 
 const InstructorDashboard = () => {
@@ -16,6 +13,12 @@ const InstructorDashboard = () => {
   const [toast, setToast] = useState(null);
   const [search, setSearch] = useState('');
   const [debouncedSearch, setDebouncedSearch] = useState('');
+  const [courses, setCourses] = useState([]);
+  const [coursesLoading, setCoursesLoading] = useState(false);
+  const [currentPage, setCurrentPage] = useState(1);
+  const [limit, setLimit] = useState(5);
+  const [totalPages, setTotalPages] = useState(1);
+  const [pageInput, setPageInput] = useState('1');
 
   // Debounce search by 400ms
   useEffect(() => {
@@ -49,22 +52,38 @@ const InstructorDashboard = () => {
     fetchReport();
   }, []);
 
-  // Infinite scroll for courses
-  const fetchAdminCourses = useCallback(async (page) => {
-    const params = { page, limit: 10 };
-    if (debouncedSearch.trim()) params.search = debouncedSearch.trim();
-    const { data } = await api.get('/courses/admin', { params });
-    return data; // { data: [...], pagination: {...} }
-  }, [debouncedSearch]);
+  const fetchAdminCourses = useCallback(async () => {
+    try {
+      setCoursesLoading(true);
+      const params = { page: currentPage, limit };
+      if (debouncedSearch.trim()) params.search = debouncedSearch.trim();
+      const { data } = await api.get('/courses/admin', { params });
+      setCourses(Array.isArray(data?.data) ? data.data : []);
+      setTotalPages(data?.pagination?.totalPages || 1);
+    } catch {
+      setToast({ message: 'Failed to load courses', type: 'error' });
+    } finally {
+      setCoursesLoading(false);
+    }
+  }, [currentPage, debouncedSearch, limit]);
 
-  const { items: courses, isLoading: coursesLoading, hasMore, sentinelRef, reset } =
-    useInfiniteScroll(fetchAdminCourses, [debouncedSearch]);
+  useEffect(() => {
+    fetchAdminCourses();
+  }, [fetchAdminCourses]);
+
+  useEffect(() => {
+    setCurrentPage(1);
+  }, [debouncedSearch, limit]);
+
+  useEffect(() => {
+    setPageInput(String(currentPage));
+  }, [currentPage]);
 
   const handleTogglePublish = async (courseId) => {
     try {
       const res = await api.patch(`/courses/${courseId}/publish`);
       setToast({ message: `Course ${res.data.isPublished ? 'published' : 'unpublished'}!`, type: 'success' });
-      reset(); // Re-fetch from page 1
+      fetchAdminCourses();
     } catch (err) {
       setToast({ message: err.response?.data?.message || 'Failed to toggle publish', type: 'error' });
     }
@@ -75,7 +94,7 @@ const InstructorDashboard = () => {
     try {
       await api.delete(`/courses/${courseId}`);
       setToast({ message: 'Course deleted', type: 'success' });
-      reset(); // Re-fetch from page 1
+      fetchAdminCourses();
     } catch (err) {
       setToast({ message: err.response?.data?.message || 'Failed to delete course', type: 'error' });
     }
@@ -262,12 +281,45 @@ const InstructorDashboard = () => {
             </div>
           )}
 
-          {/* Sentinel + infinite scroll states */}
-          <div ref={sentinelRef} style={{ height: '1rem' }} />
-          {coursesLoading && courses.length > 0 && <LoadingSpinner />}
-          {!hasMore && courses.length > 0 && (
-            <EndMessage message="All courses loaded" />
-          )}
+          <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', marginTop: '1rem', gap: '0.75rem', flexWrap: 'wrap' }}>
+            <div style={{ display: 'flex', alignItems: 'center', gap: '0.4rem' }}>
+              <span style={{ fontSize: '0.85rem' }}>Per page</span>
+              <select
+                className="form-input"
+                style={{ width: '80px', padding: '0.45rem' }}
+                value={limit}
+                onChange={(e) => setLimit(Number(e.target.value))}
+              >
+                <option value={5}>5</option>
+                <option value={10}>10</option>
+                <option value={20}>20</option>
+              </select>
+            </div>
+
+            <div style={{ display: 'flex', alignItems: 'center', gap: '0.4rem' }}>
+              <button className="btn btn-secondary btn-sm" disabled={currentPage <= 1} onClick={() => setCurrentPage((p) => Math.max(1, p - 1))}>Prev</button>
+              <span style={{ fontSize: '0.85rem' }}>Page {currentPage} / {totalPages}</span>
+              <button className="btn btn-secondary btn-sm" disabled={currentPage >= totalPages} onClick={() => setCurrentPage((p) => Math.min(totalPages, p + 1))}>Next</button>
+            </div>
+
+            <div style={{ display: 'flex', alignItems: 'center', gap: '0.35rem' }}>
+              <input
+                className="form-input"
+                style={{ width: '70px', padding: '0.45rem' }}
+                value={pageInput}
+                onChange={(e) => setPageInput(e.target.value)}
+              />
+              <button
+                className="btn btn-primary btn-sm"
+                onClick={() => {
+                  const page = Math.max(1, Math.min(totalPages, Number(pageInput) || 1));
+                  setCurrentPage(page);
+                }}
+              >
+                Go
+              </button>
+            </div>
+          </div>
         </div>
       </div>
 
