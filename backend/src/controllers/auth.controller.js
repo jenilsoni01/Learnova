@@ -10,6 +10,17 @@ import { asyncHandler } from '../utils/asyncHandler.js';
 import { ApiError } from '../utils/ApiError.js';
 import { ApiResponse } from '../utils/ApiResponse.js';
 
+const cleanupTempFile = (filePath) => {
+  if (!filePath) return;
+  try {
+    if (fs.existsSync(filePath)) {
+      fs.unlinkSync(filePath);
+    }
+  } catch {
+    // Ignore cleanup errors to avoid breaking auth flow.
+  }
+};
+
 // Global Cookie Options
 const cookieOptions = {
   httpOnly: true, // Prevents client-side JS from reading the cookie
@@ -30,12 +41,12 @@ const register = asyncHandler(async (req, res) => {
 
   // Early validations - if these fail, we MUST delete the file if it was uploaded
   if (!name || !email || !password) {
-    if (req.file) fs.unlinkSync(req.file.path); // Cleanup
+    if (req.file) cleanupTempFile(req.file.path);
     throw new ApiError(400, 'Name, email, and password are required');
   }
 
   if (password.length < 8) {
-    if (req.file) fs.unlinkSync(req.file.path); // Cleanup
+    if (req.file) cleanupTempFile(req.file.path);
     throw new ApiError(400, 'Password must be at least 8 characters long');
   }
 
@@ -43,7 +54,7 @@ const register = asyncHandler(async (req, res) => {
 
   const existingUser = await User.findOne({ email: normalizedEmail });
   if (existingUser) {
-    if (req.file) fs.unlinkSync(req.file.path); // Cleanup
+    if (req.file) cleanupTempFile(req.file.path);
     throw new ApiError(400, 'Email already exists');
   }
 
@@ -56,9 +67,9 @@ const register = asyncHandler(async (req, res) => {
       throw new ApiError(500, 'Avatar upload failed');
     }
 
-    // Successful upload - delete the local temp file
-    fs.unlinkSync(req.file.path); 
-    avatar = cloudinaryResponse.url || '';
+    // Successful upload - cleanup is safe even if utility already removed the file.
+    cleanupTempFile(req.file.path);
+    avatar = cloudinaryResponse.secure_url || cloudinaryResponse.url || '';
   }
 
   // Create User
