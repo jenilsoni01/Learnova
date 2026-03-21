@@ -10,7 +10,6 @@ const MyLearning = () => {
   const navigate = useNavigate();
   const [enrollments, setEnrollments] = useState([]);
   const [loading, setLoading] = useState(true);
-  const [activeTab, setActiveTab] = useState('all');
 
   useEffect(() => {
     const fetchEnrollments = async () => {
@@ -27,16 +26,6 @@ const MyLearning = () => {
     fetchEnrollments();
   }, []);
 
-  const filtered = activeTab === 'all'
-    ? enrollments
-    : enrollments.filter(e => e.status === activeTab);
-
-  const statusLabel = (s) => {
-    if (s === 'completed') return 'Completed';
-    if (s === 'in_progress') return 'In Progress';
-    return 'Yet to Start';
-  };
-
   return (
     <div className="my-learning">
       <Navbar />
@@ -47,69 +36,77 @@ const MyLearning = () => {
           <p>Track your progress and continue where you left off.</p>
         </div>
 
-        <div className="my-learning-tabs">
-          {[
-            { key: 'all', label: `All (${enrollments.length})` },
-            { key: 'in_progress', label: 'In Progress' },
-            { key: 'completed', label: 'Completed' },
-            { key: 'yet_to_start', label: 'Yet to Start' }
-          ].map(tab => (
-            <button
-              key={tab.key}
-              className={activeTab === tab.key ? 'active' : ''}
-              onClick={() => setActiveTab(tab.key)}
-            >
-              {tab.label}
-            </button>
-          ))}
-        </div>
-
         {loading ? (
           <div className="loading-container"><div className="spinner" /></div>
-        ) : filtered.length === 0 ? (
+        ) : enrollments.length === 0 ? (
           <div className="empty-state">
             <div className="empty-icon">📚</div>
-            <h3>{activeTab === 'all' ? "You haven't enrolled in any courses yet" : `No ${statusLabel(activeTab).toLowerCase()} courses`}</h3>
+            <h3>You haven't enrolled in any courses yet</h3>
             <p>Browse courses and start learning today!</p>
             <button className="btn btn-primary" onClick={() => navigate('/dashboard')} style={{ marginTop: '1rem' }}>
               Browse Courses
             </button>
           </div>
         ) : (
-          <div className="my-learning-grid">
-            {filtered.map((enrollment, i) => (
-              <div
-                key={enrollment._id}
-                className="enrollment-card animate-fade-in-up"
-                style={{ animationDelay: `${i * 0.08}s` }}
-                onClick={() => navigate(`/learn/${enrollment.course?._id}`)}
-              >
-                <div
-                  className="enroll-banner"
-                  style={enrollment.course?.coverImage ? { backgroundImage: `url(${enrollment.course.coverImage})` } : {}}
-                >
-                  <span className={`enroll-status ${enrollment.status}`}>
-                    {statusLabel(enrollment.status)}
-                  </span>
-                </div>
-                <div className="enroll-body">
-                  <h4 className="enroll-title">{enrollment.course?.title || 'Untitled Course'}</h4>
-                  <p className="enroll-desc">{enrollment.course?.description || ''}</p>
-                  <div className="enroll-progress">
-                    <div className="enroll-progress-bar">
-                      <div className="enroll-progress-fill" style={{ width: `${enrollment.completionPct || 0}%` }} />
+          <div className="kanban-board">
+            {[
+              { id: 'yet_to_start', title: 'Yet to Start', label: 'Yet to Start', filter: 'yet_to_start', icon: '📝' },
+              { id: 'in_progress', title: 'In Progress', label: 'In Progress', filter: 'in_progress', icon: '⏳' },
+              { id: 'completed', title: 'Completed', label: 'Completed', filter: 'completed', icon: '✅' }
+            ].map(col => {
+              const colEnrollments = enrollments.filter(e => e.status === col.filter);
+              return (
+                <div key={col.id} className="kanban-column">
+                  <div className={`kanban-header ${col.id}`}>
+                    <div className="kanban-title">
+                      <span className="kanban-icon">{col.icon}</span>
+                      <h3>{col.title}</h3>
                     </div>
-                    <div className="enroll-progress-text">
-                      <span>{enrollment.completionPct || 0}% complete</span>
-                      <span>{enrollment.status === 'completed' ? '✅' : '📖'}</span>
-                    </div>
+                    <span className="kanban-count">{colEnrollments.length}</span>
                   </div>
-                  <button className="btn btn-primary enroll-action btn-sm">
-                    {enrollment.status === 'completed' ? 'Review Course' : enrollment.status === 'in_progress' ? 'Continue Learning' : 'Start Learning'}
-                  </button>
+                  
+                  <div className="kanban-cards">
+                    {colEnrollments.length === 0 ? (
+                      <div className="kanban-empty">No courses in this state</div>
+                    ) : (
+                      colEnrollments.map((enrollment, i) => (
+                        <div
+                          key={enrollment._id}
+                          className="enrollment-card animate-fade-in-up"
+                          style={{ animationDelay: `${i * 0.08}s` }}
+                          onClick={() => navigate(`/learn/${enrollment.course?._id}`)}
+                        >
+                          <div
+                            className="enroll-banner"
+                            style={enrollment.course?.coverImage ? { backgroundImage: `url(${enrollment.course.coverImage})` } : {}}
+                          >
+                            <span className={`enroll-status ${enrollment.status}`}>
+                              {col.label}
+                            </span>
+                          </div>
+                          <div className="enroll-body">
+                            <h4 className="enroll-title">{enrollment.course?.title || 'Untitled Course'}</h4>
+                            <p className="enroll-desc">{enrollment.course?.description || ''}</p>
+                            <div className="enroll-progress">
+                              <div className="enroll-progress-bar">
+                                <div className="enroll-progress-fill" style={{ width: `${enrollment.completionPct || 0}%` }} />
+                              </div>
+                              <div className="enroll-progress-text">
+                                <span>{enrollment.completionPct || 0}% complete</span>
+                                <span>{enrollment.status === 'completed' ? '✅' : '📖'}</span>
+                              </div>
+                            </div>
+                            <button className="btn btn-primary enroll-action btn-sm">
+                              {enrollment.status === 'completed' ? 'Review Course' : enrollment.status === 'in_progress' ? 'Continue Learning' : 'Start Learning'}
+                            </button>
+                          </div>
+                        </div>
+                      ))
+                    )}
+                  </div>
                 </div>
-              </div>
-            ))}
+              );
+            })}
           </div>
         )}
       </div>

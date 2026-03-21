@@ -31,7 +31,7 @@ const cookieOptions = {
   httpOnly: true, // Prevents client-side JS from reading the cookie
   secure: process.env.NODE_ENV === 'production', // Requires HTTPS in production
   sameSite: process.env.NODE_ENV === 'production' ? 'none' : 'lax', // 'none' allows cross-origin on Vercel
-  maxAge: 7 * 24 * 60 * 60 * 1000, // 7 days in milliseconds
+  maxAge: 10 * 60 * 1000, // 7 days in milliseconds
 };
 
 const signToken = (id) => {

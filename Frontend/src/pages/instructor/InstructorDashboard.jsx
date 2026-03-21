@@ -11,6 +11,7 @@ const InstructorDashboard = () => {
   const navigate = useNavigate();
   const [reportData, setReportData] = useState([]);
   const [courses, setCourses] = useState([]);
+  const [viewMode, setViewMode] = useState('list'); // 'list' (table) or 'grid' (cards)
   const [loading, setLoading] = useState(true);
   const [toast, setToast] = useState(null);
 
@@ -82,6 +83,22 @@ const InstructorDashboard = () => {
             <button className="btn btn-primary" onClick={() => navigate('/instructor/create')}>
               ➕ Create Course
             </button>
+            <div className="view-toggle">
+              <button 
+                className={`toggle-btn ${viewMode === 'grid' ? 'active' : ''}`}
+                onClick={() => setViewMode('grid')}
+                title="Grid View"
+              >
+                <svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round"><rect x="3" y="3" width="7" height="7"></rect><rect x="14" y="3" width="7" height="7"></rect><rect x="14" y="14" width="7" height="7"></rect><rect x="3" y="14" width="7" height="7"></rect></svg>
+              </button>
+              <button 
+                className={`toggle-btn ${viewMode === 'list' ? 'active' : ''}`}
+                onClick={() => setViewMode('list')}
+                title="List View"
+              >
+                <svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round"><line x1="8" y1="6" x2="21" y2="6"></line><line x1="8" y1="12" x2="21" y2="12"></line><line x1="8" y1="18" x2="21" y2="18"></line><line x1="3" y1="6" x2="3.01" y2="6"></line><line x1="3" y1="12" x2="3.01" y2="12"></line><line x1="3" y1="18" x2="3.01" y2="18"></line></svg>
+              </button>
+            </div>
           </div>
         </div>
 
@@ -117,7 +134,7 @@ const InstructorDashboard = () => {
               <h3>No courses yet</h3>
               <p>Create your first course to get started!</p>
             </div>
-          ) : (
+          ) : viewMode === 'list' ? (
             <table className="instructor-table">
               <thead>
                 <tr>
@@ -173,6 +190,44 @@ const InstructorDashboard = () => {
                 })}
               </tbody>
             </table>
+          ) : (
+            <div className="instructor-courses-grid">
+              {courses.map(course => {
+                const report = reportData.find(r => r.courseId === course._id);
+                return (
+                  <div key={course._id} className="inst-course-card">
+                    <div className="card-header">
+                      <div className="title-wrapper">
+                        <h4>{course.title}</h4>
+                        <span className={`status-badge ${course.isPublished ? 'published' : 'draft'}`}>
+                          {course.isPublished ? 'Published' : 'Draft'}
+                        </span>
+                      </div>
+                      <div className="tags">
+                        {course.tags?.map(tag => <span key={tag} className="tag">{tag}</span>)}
+                      </div>
+                    </div>
+                    <div className="card-stats">
+                      <div className="stat">
+                        <span className="value">{course.lessonsCount ?? 0}</span>
+                        <span className="label">Lessons</span>
+                      </div>
+                      <div className="stat">
+                        <span className="value">{report?.enrollmentsCount ?? 0}</span>
+                        <span className="label">Students</span>
+                      </div>
+                    </div>
+                    <div className="card-actions">
+                      <button className="btn btn-secondary btn-sm" onClick={() => navigate(`/instructor/edit/${course._id}`)}>✏️ Edit</button>
+                      <button className="btn btn-secondary btn-sm" onClick={() => handleTogglePublish(course._id)}>
+                        {course.isPublished ? '📤 Unpublish' : '📢 Publish'}
+                      </button>
+                      <button className="btn btn-danger btn-sm" onClick={() => handleDelete(course._id)}>🗑️</button>
+                    </div>
+                  </div>
+                );
+              })}
+            </div>
           )}
         </div>
       </div>

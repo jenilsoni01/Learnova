@@ -40,7 +40,7 @@
 
 .dashboard-search .form-input {
   padding-left: 2.75rem;
-  border-radius: 16px;
+  border-radius: 12px;
 }
 
 .dashboard-layout {
@@ -59,6 +59,79 @@
   display: grid;
   grid-template-columns: repeat(auto-fill, minmax(280px, 1fr));
   gap: 1.5rem;
+}
+
+.courses-list {
+  display: flex;
+  flex-direction: column;
+  gap: 1rem;
+}
+
+.dashboard-controls {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 1rem;
+  justify-content: center;
+  align-items: center;
+  max-width: 800px;
+  margin: 0 auto;
+}
+
+.dashboard-search {
+  flex: 1;
+  min-width: 250px;
+  position: relative;
+}
+
+.dashboard-filters {
+  display: flex;
+  gap: 1rem;
+  align-items: center;
+}
+
+.category-select {
+  padding: 0.6rem 1rem;
+  border-radius: 12px;
+  background-color: var(--glass-bg);
+  border: 1px solid var(--glass-border);
+  color: var(--text-h);
+  font-size: 0.9rem;
+  cursor: pointer;
+  outline: none;
+}
+
+.category-select:focus {
+  border-color: var(--primary);
+}
+
+.view-toggle {
+  display: flex;
+  background: var(--glass-bg);
+  border: 1px solid var(--glass-border);
+  border-radius: 10px;
+  padding: 0.2rem;
+}
+
+.toggle-btn {
+  background: transparent;
+  border: none;
+  border-radius: 8px;
+  padding: 0.4rem;
+  cursor: pointer;
+  color: var(--text);
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  transition: all 0.2s;
+}
+
+.toggle-btn:hover {
+  color: var(--text-h);
+}
+
+.toggle-btn.active {
+  background: var(--primary);
+  color: white;
 }
 
 /* Profile Sidebar */
