@@ -10,6 +10,7 @@ import QuizPage from './pages/learner/QuizPage'
 import InstructorDashboard from './pages/instructor/InstructorDashboard'
 import CourseBuilder from './pages/instructor/CourseBuilder'
 import Profile from './pages/Profile'
+import Leaderboard from './pages/Leaderboard'
 import ProtectedRoute from './components/common/ProtectedRoute'
 import './App.css'
 
@@ -38,6 +39,9 @@ function App() {
             } />
             <Route path="/profile" element={
               <ProtectedRoute><Profile /></ProtectedRoute>
+            } />
+            <Route path="/leaderboard" element={
+              <ProtectedRoute><Leaderboard /></ProtectedRoute>
             } />
 
             {/* Instructor (protected + role) */}

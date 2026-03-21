@@ -5,6 +5,9 @@ import { authorize } from '../middleware/role.middleware.js';
 
 const router = express.Router();
 
+// General leaderboard (all authenticated users)
+router.get('/leaderboard', protect, reportingController.getGeneralLeaderboard);
+
 // Get reporting dashboard for specific course
 router.get('/course/:courseId', protect, authorize('admin', 'instructor'), reportingController.getReportingDashboard);
 
