@@ -58,7 +58,7 @@ const register = asyncHandler(async (req, res) => {
 
     // Successful upload - delete the local temp file
     fs.unlinkSync(req.file.path); 
-    avatar = cloudinaryResponse.secure_url || '';
+    avatar = cloudinaryResponse.url || '';
   }
 
   // Create User
