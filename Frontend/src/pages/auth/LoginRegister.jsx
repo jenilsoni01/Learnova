@@ -90,7 +90,7 @@ function Auth() {
         await apiRegister(data);
         setToast({ message: 'Account created successfully!', type: 'success' });
       }
-      setTimeout(() => navigate('/'), 1500);
+      setTimeout(() => navigate('/dashboard'), 1500);
     } catch (error) {
       setToast({ 
         message: error.response?.data?.message || 'Authentication failed. Please try again.', 
