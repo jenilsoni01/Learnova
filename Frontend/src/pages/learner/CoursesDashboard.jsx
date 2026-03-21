@@ -8,6 +8,7 @@ import useInfiniteScroll from '../../hooks/useInfiniteScroll';
 import LoadingSpinner from '../../components/common/LoadingSpinner';
 import EndMessage from '../../components/common/EndMessage';
 import ErrorRetry from '../../components/common/ErrorRetry';
+import Toast from '../../components/common/Toast';
 import './CoursesDashboard.css';
 
 const BADGES = [
@@ -26,6 +27,9 @@ const CoursesDashboard = () => {
   const [categoryFilter, setCategoryFilter] = useState('');
   const [viewMode, setViewMode] = useState('grid');
   const [isProfileOpen, setIsProfileOpen] = useState(false);
+  const [myInvitations, setMyInvitations] = useState([]);
+  const [invitesLoading, setInvitesLoading] = useState(false);
+  const [toast, setToast] = useState(null);
 
   // Debounce search by 400ms
   useEffect(() => {
@@ -49,6 +53,37 @@ const CoursesDashboard = () => {
 
   const { items: courses, isLoading, hasMore, error, sentinelRef, loadMore } =
     useInfiniteScroll(fetchCourses, [debouncedSearch]);
+
+  const fetchInvitations = useCallback(async () => {
+    if (!user || user.role !== 'learner') {
+      setMyInvitations([]);
+      return;
+    }
+    try {
+      setInvitesLoading(true);
+      const { data } = await api.get('/enrollments/invitations/me');
+      setMyInvitations(Array.isArray(data) ? data : []);
+    } catch {
+      setMyInvitations([]);
+    } finally {
+      setInvitesLoading(false);
+    }
+  }, [user]);
+
+  useEffect(() => {
+    fetchInvitations();
+  }, [fetchInvitations]);
+
+  const handleAcceptInvitation = async (invitationId) => {
+    try {
+      await api.post(`/enrollments/invitations/${invitationId}/accept`);
+      setToast({ message: 'Invitation accepted! You are now enrolled.', type: 'success' });
+      fetchInvitations();
+      loadMore(1);
+    } catch (err) {
+      setToast({ message: err.response?.data?.message || 'Failed to accept invitation', type: 'error' });
+    }
+  };
 
   const userPoints = user?.totalPoints || 0;
   const radius = 42;
@@ -121,6 +156,38 @@ const CoursesDashboard = () => {
 
       <div className="container dashboard-layout">
         <div className="main-content">
+          {user?.role === 'learner' && (
+            <div className="empty-state" style={{ marginBottom: '1rem', textAlign: 'left' }}>
+              <h3 style={{ marginBottom: '0.4rem' }}>Invitations</h3>
+              {invitesLoading ? (
+                <p>Loading invitations...</p>
+              ) : myInvitations.length === 0 ? (
+                <p>No invitations right now.</p>
+              ) : (
+                <div style={{ display: 'flex', flexDirection: 'column', gap: '0.5rem' }}>
+                  {myInvitations.map((inv) => (
+                    <div key={inv._id} style={{ display: 'flex', justifyContent: 'space-between', gap: '0.6rem', alignItems: 'center' }}>
+                      <div>
+                        <div style={{ fontWeight: 600 }}>{inv.course?.title || 'Course'}</div>
+                        <div style={{ fontSize: '0.8rem', color: 'var(--text)' }}>Status: {inv.status}</div>
+                      </div>
+                      <div style={{ display: 'flex', gap: '0.4rem' }}>
+                        {inv.status !== 'accepted' && (
+                          <button className="btn btn-primary btn-sm" onClick={() => handleAcceptInvitation(inv._id)}>
+                            Accept
+                          </button>
+                        )}
+                        <button className="btn btn-secondary btn-sm" onClick={() => window.location.href = `/courses/${inv.course?._id}`}>
+                          View Course
+                        </button>
+                      </div>
+                    </div>
+                  ))}
+                </div>
+              )}
+            </div>
+          )}
+
           {showSkeleton ? (
             <div className={`courses-${viewMode}`}>
               {[1, 2, 3, 4].map(i => <SkeletonCard key={i} />)}
@@ -205,6 +272,8 @@ const CoursesDashboard = () => {
           </aside>
         )}
       </div>
+
+      {toast && <Toast message={toast.message} type={toast.type} onClose={() => setToast(null)} />}
     </div>
   );
 };

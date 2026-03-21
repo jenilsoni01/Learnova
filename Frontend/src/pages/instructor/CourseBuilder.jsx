@@ -27,6 +27,10 @@ const CourseBuilder = () => {
   const [toast, setToast] = useState(null);
   const [saving, setSaving] = useState(false);
   const [courseId, setCourseId] = useState(editId || null);
+  const [inviteEmails, setInviteEmails] = useState('');
+  const [inviting, setInviting] = useState(false);
+  const [invitationList, setInvitationList] = useState([]);
+  const [loadingInvites, setLoadingInvites] = useState(false);
 
   // Course data
   const [courseData, setCourseData] = useState({
@@ -69,6 +73,27 @@ const CourseBuilder = () => {
     };
     load();
   }, [editId, isEdit]);
+
+  const activeCourseId = courseId || editId;
+
+  const fetchInvitations = async (targetCourseId) => {
+    if (!targetCourseId) return;
+    try {
+      setLoadingInvites(true);
+      const { data } = await api.get(`/enrollments/course/${targetCourseId}/invitations`);
+      setInvitationList(Array.isArray(data) ? data : []);
+    } catch {
+      setInvitationList([]);
+    } finally {
+      setLoadingInvites(false);
+    }
+  };
+
+  useEffect(() => {
+    if (courseData.accessRule === 'invitation' && activeCourseId) {
+      fetchInvitations(activeCourseId);
+    }
+  }, [courseData.accessRule, activeCourseId]);
 
   const uploadCourseCover = async (file) => {
     const fd = new FormData();
@@ -150,6 +175,62 @@ const CourseBuilder = () => {
       ...p,
       attachments: (p.attachments || []).filter((_, i) => i !== index)
     }));
+  };
+
+  const handleSendInvites = async () => {
+    if (!activeCourseId) {
+      setToast({ message: 'Save course first before sending invites', type: 'error' });
+      return;
+    }
+
+    const emails = inviteEmails
+      .split(/[\n,;]+/)
+      .map((e) => e.trim())
+      .filter(Boolean);
+
+    if (emails.length === 0) {
+      setToast({ message: 'Enter at least one email', type: 'error' });
+      return;
+    }
+
+    try {
+      setInviting(true);
+      const { data } = await api.post(`/enrollments/${activeCourseId}/invite`, { emails });
+      const invitedCount = Array.isArray(data.invited) ? data.invited.length : 0;
+      const skippedCount = Array.isArray(data.skipped) ? data.skipped.length : 0;
+      setToast({
+        message: `Invites sent: ${invitedCount}${skippedCount ? `, skipped: ${skippedCount}` : ''}`,
+        type: 'success'
+      });
+      if (invitedCount > 0) setInviteEmails('');
+      fetchInvitations(activeCourseId);
+    } catch (err) {
+      setToast({ message: err.response?.data?.message || 'Failed to send invites', type: 'error' });
+    } finally {
+      setInviting(false);
+    }
+  };
+
+  const handleRevokeInvitation = async (invitationId) => {
+    if (!activeCourseId) return;
+    try {
+      await api.patch(`/enrollments/course/${activeCourseId}/invitations/${invitationId}/revoke`);
+      setToast({ message: 'Invitation revoked', type: 'success' });
+      fetchInvitations(activeCourseId);
+    } catch (err) {
+      setToast({ message: err.response?.data?.message || 'Failed to revoke invitation', type: 'error' });
+    }
+  };
+
+  const handleResendInvitation = async (invitationId) => {
+    if (!activeCourseId) return;
+    try {
+      await api.patch(`/enrollments/course/${activeCourseId}/invitations/${invitationId}/resend`);
+      setToast({ message: 'Invitation marked as re-sent', type: 'success' });
+      fetchInvitations(activeCourseId);
+    } catch (err) {
+      setToast({ message: err.response?.data?.message || 'Failed to resend invitation', type: 'error' });
+    }
   };
 
   // Step 1: Save/update course
@@ -428,6 +509,64 @@ const CourseBuilder = () => {
                 {saving ? 'Saving...' : 'Save & Continue →'}
               </button>
             </div>
+
+            {courseData.accessRule === 'invitation' && (courseId || isEdit) && (
+              <div className="add-form" style={{ marginTop: '1rem' }}>
+                <h3 style={{ margin: 0 }}>Send Course Invites</h3>
+                <p style={{ margin: 0, color: 'var(--text)', fontSize: '0.85rem' }}>
+                  Add learner emails separated by comma or new line.
+                </p>
+                <textarea
+                  className="form-input"
+                  rows={4}
+                  placeholder="learner1@example.com, learner2@example.com"
+                  value={inviteEmails}
+                  onChange={(e) => setInviteEmails(e.target.value)}
+                />
+                <div className="add-form-actions">
+                  <button className="btn btn-primary btn-sm" onClick={handleSendInvites} disabled={inviting}>
+                    {inviting ? 'Sending...' : 'Send Invites'}
+                  </button>
+                </div>
+
+                <div style={{ marginTop: '0.8rem' }}>
+                  <h4 style={{ margin: '0 0 0.4rem 0' }}>Invited Learners</h4>
+                  {loadingInvites ? (
+                    <p style={{ margin: 0, fontSize: '0.85rem', color: 'var(--text)' }}>Loading invites...</p>
+                  ) : invitationList.length === 0 ? (
+                    <p style={{ margin: 0, fontSize: '0.85rem', color: 'var(--text)' }}>No invites sent yet.</p>
+                  ) : (
+                    <div style={{ display: 'flex', flexDirection: 'column', gap: '0.45rem' }}>
+                      {invitationList.map((inv) => (
+                        <div
+                          key={inv._id}
+                          style={{
+                            display: 'flex',
+                            alignItems: 'center',
+                            justifyContent: 'space-between',
+                            gap: '0.6rem',
+                            border: '1px solid rgba(255,255,255,0.1)',
+                            borderRadius: '10px',
+                            padding: '0.5rem 0.65rem'
+                          }}
+                        >
+                          <div style={{ minWidth: 0 }}>
+                            <div style={{ fontSize: '0.86rem', overflow: 'hidden', textOverflow: 'ellipsis' }}>{inv.email}</div>
+                            <div style={{ fontSize: '0.75rem', color: 'var(--text)', textTransform: 'capitalize' }}>
+                              Status: {inv.status}
+                            </div>
+                          </div>
+                          <div style={{ display: 'flex', gap: '0.35rem' }}>
+                            <button className="btn btn-secondary btn-sm" onClick={() => handleResendInvitation(inv._id)}>Resend</button>
+                            <button className="btn btn-danger btn-sm" onClick={() => handleRevokeInvitation(inv._id)}>Revoke</button>
+                          </div>
+                        </div>
+                      ))}
+                    </div>
+                  )}
+                </div>
+              </div>
+            )}
           </div>
         )}
 
