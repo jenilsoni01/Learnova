@@ -2,6 +2,9 @@ import dotenv from "dotenv" //(module)
 import connectDB from "./db/index.js"
 import app from "./app.js"
 
+import dns from "node:dns/promises";
+dns.setServers(["8.8.8.8", "8.8.4.4"]);
+
 dotenv.config({
     path: './env'
 })
