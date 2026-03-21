@@ -5,10 +5,9 @@ const answerSchema = new mongoose.Schema({
     type: mongoose.Schema.Types.ObjectId, 
     ref: 'Question' 
   },
-  selectedOption: { 
-    type: String, 
-    default: null 
-  },
+  selectedOptions: [ 
+    { type: mongoose.Schema.Types.ObjectId } 
+  ],
   isCorrect: { 
     type: Boolean, 
     default: false 
@@ -26,6 +25,10 @@ const quizAttemptSchema = new mongoose.Schema({
     ref: 'User', 
     required: true 
   },
+  attemptNumber: { 
+    type: Number, 
+    required: true 
+  },
   answers: [answerSchema],
   score: { 
     type: Number, 
@@ -33,15 +36,11 @@ const quizAttemptSchema = new mongoose.Schema({
   },
   totalQuestions: { 
     type: Number, 
-    default: 0 
+    required: true 
   },
-  correctAnswers: { 
+  pointsEarned: { 
     type: Number, 
     default: 0 
-  },
-  attemptNumber: { 
-    type: Number, 
-    default: 1 
   },
   completedAt: { 
     type: Date 

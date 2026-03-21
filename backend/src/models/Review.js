@@ -24,6 +24,8 @@ const reviewSchema = new mongoose.Schema({
   }
 }, { timestamps: true });
 
+reviewSchema.index({ course: 1, learner: 1 }, { unique: true });
+
 // Unique review per learner per course
 reviewSchema.index({ course: 1, learner: 1 }, { unique: true });
 

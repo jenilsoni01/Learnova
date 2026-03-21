@@ -18,18 +18,32 @@ const lessonSchema = new mongoose.Schema({
   },
   order: { 
     type: Number, 
-    required: true 
+    default: 0 
   },
-  content: { 
+  description: { 
     type: String, 
-    default: null 
+    default: '' 
   },
-  attachments: [ 
-    { 
-      type: mongoose.Schema.Types.ObjectId, 
-      ref: 'Attachment' 
-    } 
-  ],
+  videoUrl: { 
+    type: String, 
+    default: '' 
+  },
+  fileUrl: { 
+    type: String, 
+    default: '' 
+  },
+  imageUrl: { 
+    type: String, 
+    default: '' 
+  },
+  durationMins: { 
+    type: Number, 
+    default: 0 
+  },
+  allowDownload: { 
+    type: Boolean, 
+    default: false 
+  },
   responsible: { 
     type: mongoose.Schema.Types.ObjectId, 
     ref: 'User' 

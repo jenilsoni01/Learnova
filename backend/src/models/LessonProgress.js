@@ -11,17 +11,13 @@ const lessonProgressSchema = new mongoose.Schema({
     ref: 'Lesson', 
     required: true 
   },
-  started: { 
-    type: Boolean, 
-    default: false 
-  },
-  completed: { 
-    type: Boolean, 
-    default: false 
+  status: { 
+    type: String, 
+    enum: ['not_started', 'in_progress', 'completed'], 
+    default: 'not_started' 
   },
   completedAt: { 
-    type: Date,
-    default: null
+    type: Date 
   }
 }, { timestamps: true });
 

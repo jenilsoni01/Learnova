@@ -6,33 +6,28 @@ const quizSchema = new mongoose.Schema({
     ref: 'Course', 
     required: true 
   },
+  lesson: { 
+    type: mongoose.Schema.Types.ObjectId, 
+    ref: 'Lesson' 
+  },
   title: { 
     type: String, 
-    required: true, 
-    trim: true 
-  },
-  description: { 
-    type: String, 
-    default: null 
+    required: true 
   },
   pointsAttempt1: { 
     type: Number, 
-    required: true,
     default: 10 
   },
   pointsAttempt2: { 
     type: Number, 
-    required: true,
     default: 7 
   },
   pointsAttempt3: { 
     type: Number, 
-    required: true,
     default: 5 
   },
   pointsAttempt4Plus: { 
     type: Number, 
-    required: true,
     default: 3 
   }
 }, { timestamps: true });

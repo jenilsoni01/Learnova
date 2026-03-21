@@ -17,21 +17,25 @@ const userSchema = new mongoose.Schema({
   password: { 
     type: String, 
     required: true, 
-    minlength: 6 
+    minlength: 8 
   },
   role: { 
     type: String, 
     enum: ['admin', 'instructor', 'learner'], 
     default: 'learner' 
   },
-  points: { 
+  avatar: { 
+    type: String, 
+    default: '' 
+  },
+  totalPoints: { 
     type: Number, 
     default: 0 
   },
   badgeLevel: { 
-    type: Number, 
-    enum: [1, 2, 3, 4, 5, 6], 
-    default: 1 
+    type: String, 
+    enum: ['Newbie', 'Explorer', 'Achiever', 'Specialist', 'Expert', 'Master'], 
+    default: 'Newbie' 
   }
 }, { timestamps: true });
 
@@ -39,13 +43,8 @@ const userSchema = new mongoose.Schema({
 userSchema.pre('save', async function (next) {
   if (!this.isModified('password')) return next();
   
-  try {
-    const salt = await bcrypt.genSalt(10);
-    this.password = await bcrypt.hash(this.password, salt);
-    next();
-  } catch (error) {
-    next(error);
-  }
+  this.password = await bcrypt.hash(this.password, 12);
+  next();
 });
 
 // Compare password

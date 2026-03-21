@@ -15,16 +15,16 @@ const enrollmentSchema = new mongoose.Schema({
     type: Date, 
     default: Date.now 
   },
+  startedAt: { 
+    type: Date 
+  },
+  completedAt: { 
+    type: Date 
+  },
   status: { 
     type: String, 
-    enum: ['enrolled', 'completed'], 
-    default: 'enrolled' 
-  },
-  progress: { 
-    type: Number, 
-    default: 0,
-    min: 0,
-    max: 100
+    enum: ['yet_to_start', 'in_progress', 'completed'], 
+    default: 'yet_to_start' 
   },
   timeSpentMins: { 
     type: Number, 

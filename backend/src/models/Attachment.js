@@ -8,7 +8,11 @@ const attachmentSchema = new mongoose.Schema({
   },
   type: { 
     type: String, 
-    enum: ['document', 'image', 'video'], 
+    enum: ['file', 'url'], 
+    required: true 
+  },
+  name: { 
+    type: String, 
     required: true 
   },
   url: { 

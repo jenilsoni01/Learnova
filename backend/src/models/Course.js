@@ -8,31 +8,45 @@ const courseSchema = new mongoose.Schema({
   },
   description: { 
     type: String, 
-    required: true 
+    default: '' 
   },
-  instructor: { 
-    type: mongoose.Schema.Types.ObjectId, 
-    ref: 'User', 
-    required: true 
-  },
-  category: { 
+  coverImage: { 
     type: String, 
-    required: true, 
-    trim: true 
+    default: '' 
   },
-  thumbnail: { 
+  tags: [ 
+    { type: String } 
+  ],
+  websiteUrl: { 
     type: String, 
-    default: null 
+    default: '' 
+  },
+  isPublished: { 
+    type: Boolean, 
+    default: false 
   },
   visibility: { 
     type: String, 
-    enum: ['private', 'public', 'link-shared'], 
-    default: 'private' 
+    enum: ['everyone', 'signed_in'], 
+    default: 'everyone' 
   },
-  status: { 
+  accessRule: { 
     type: String, 
-    enum: ['draft', 'published'], 
-    default: 'draft' 
+    enum: ['open', 'invitation', 'payment'], 
+    default: 'open' 
+  },
+  price: { 
+    type: Number, 
+    default: 0 
+  },
+  responsible: { 
+    type: mongoose.Schema.Types.ObjectId, 
+    ref: 'User' 
+  },
+  createdBy: { 
+    type: mongoose.Schema.Types.ObjectId, 
+    ref: 'User', 
+    required: true 
   },
   viewsCount: { 
     type: Number, 
