@@ -15,12 +15,21 @@ const BADGES = [
   { name: 'Master', points: 120 }
 ];
 
+
+
 const CoursesDashboard = () => {
   const { user } = useAuth();
   const [courses, setCourses] = useState([]);
   const [search, setSearch] = useState('');
   const [isProfileOpen, setIsProfileOpen] = useState(false);
   const [loading, setLoading] = useState(true);
+
+  const getBadge = (points) => {
+    const eligibleBadges = BADGES.filter(b => points >= b.points);
+    return eligibleBadges.length
+      ? eligibleBadges[eligibleBadges.length - 1].name
+      : BADGES[0].name;
+  };
 
   useEffect(() => {
     const fetchCourses = async () => {
@@ -128,7 +137,7 @@ const CoursesDashboard = () => {
                 </div>
                 <div className="progress-text">
                   <p className="total-points">Total {userPoints} Points</p>
-                  <p className="current-badge">{user.badgeLevel || 'Newbie'}</p>
+                  <p className="current-badge">{getBadge(userPoints)}</p>
                 </div>
               </div>
             </div>

@@ -5,6 +5,8 @@ import Navbar from '../../components/common/Navbar';
 import Toast from '../../components/common/Toast';
 import './InstructorDashboard.css';
 
+
+
 const InstructorDashboard = () => {
   const navigate = useNavigate();
   const [reportData, setReportData] = useState([]);
