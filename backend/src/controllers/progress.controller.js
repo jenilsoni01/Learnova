@@ -6,6 +6,7 @@
 import Enrollment from '../models/Enrollment.js';
 import LessonProgress from '../models/LessonProgress.js';
 import Lesson from '../models/Lesson.js';
+import Course from '../models/Course.js';
 import { computeCompletionPct } from '../utils/progress.utils.js';
 
 export const getCourseProgress = async (req, res) => {
@@ -17,12 +18,18 @@ export const getCourseProgress = async (req, res) => {
       learner: req.user._id,
     });
 
-    const lessons = await Lesson.find({ course: courseId })
-      .select('title type order')
-      .sort('order')
-      .lean();
-
     if (!enrollment) {
+      const course = await Course.findById(courseId).select('accessRule').lean();
+
+      if (course?.accessRule === 'invitation') {
+        return res.status(403).json({ message: 'Access denied. This course is by invitation only.' });
+      }
+
+      const lessons = await Lesson.find({ course: courseId })
+        .select('title type order')
+        .sort('order')
+        .lean();
+
       return res.json({
         enrolled: false,
         enrollment: null,
@@ -32,6 +39,11 @@ export const getCourseProgress = async (req, res) => {
         totalLessons: lessons.length,
       });
     }
+
+    const lessons = await Lesson.find({ course: courseId })
+      .select('title type order')
+      .sort('order')
+      .lean();
 
     const progressRows = await LessonProgress.find({ enrollment: enrollment._id }).lean();
     const progressMap = new Map(progressRows.map((row) => [String(row.lesson), row.status]));
@@ -61,10 +73,12 @@ export const updateLessonProgress = async (req, res) => {
     const { courseId } = req.params;
     const { lessonId, status } = req.body;
 
-    if (!lessonId || !['in_progress', 'completed'].includes(status)) {
+    const allowedStatuses = ['not_started', 'in_progress', 'completed'];
+
+    if (!lessonId || !status || !allowedStatuses.includes(status)) {
       return res
         .status(400)
-        .json({ message: "lessonId and valid status ('in_progress'|'completed') are required" });
+        .json({ message: 'Invalid status. Must be one of: not_started, in_progress, completed' });
     }
 
     const enrollment = await Enrollment.findOne({
@@ -81,12 +95,17 @@ export const updateLessonProgress = async (req, res) => {
       return res.status(404).json({ message: 'Lesson not found for this course' });
     }
 
+    const updatePayload = { status };
+
+    if (status === 'completed') {
+      updatePayload.completedAt = new Date();
+    } else if (status === 'not_started') {
+      updatePayload.completedAt = null;
+    }
+
     await LessonProgress.findOneAndUpdate(
       { enrollment: enrollment._id, lesson: lessonId },
-      {
-        status,
-        ...(status === 'completed' ? { completedAt: new Date() } : {}),
-      },
+      updatePayload,
       { upsert: true, new: true, setDefaultsOnInsert: true }
     );
 

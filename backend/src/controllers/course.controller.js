@@ -25,7 +25,7 @@ const resolveAuthUserFromHeader = async (req) => {
 export const getPublicCourses = async (req, res) => {
   try {
     const { search } = req.query;
-    const authUser = await resolveAuthUserFromHeader(req);
+    const authUser = req.user;
 
     const filter = { isPublished: true };
     if (!authUser) {

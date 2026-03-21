@@ -1,10 +1,15 @@
 // FILE: server/controllers/auth.controller.js
 // STATUS: MODIFIED
-// PURPOSE: Handle registration, login, token issuance, and authenticated profile retrieval.
+// FUNCTION CHANGED: getMe()
+// ⚠️ WARNING: Only getMe() was changed. register() and login() are untouched.
 
 import jwt from 'jsonwebtoken';
 import fs from 'fs';
 import User from '../models/User.js';
+import Course from '../models/Course.js';
+import Lesson from '../models/Lesson.js';
+import Enrollment from '../models/Enrollment.js';
+import LessonProgress from '../models/LessonProgress.js';
 import { uploadOnCloudinary } from '../utils/cloudinary.js';
 import { asyncHandler } from '../utils/asyncHandler.js';
 import { ApiError } from '../utils/ApiError.js';
@@ -139,11 +144,72 @@ const login = asyncHandler(async (req, res) => {
 });
 
 const getMe = asyncHandler(async (req, res) => {
-  return res
-    .status(200)
-    .json(
-      new ApiResponse(200, req.user, 'Current user fetched successfully')
-    );
+  try {
+    if (!req.user) {
+      return res.status(401).json({ message: 'Not authorized' });
+    }
+
+    let courses = [];
+
+    if (req.user.role === 'admin' || req.user.role === 'instructor') {
+      const createdCourses = await Course.find({ createdBy: req.user._id })
+        .populate('responsible', 'name');
+
+      courses = await Promise.all(
+        createdCourses.map(async (course) => {
+          const lessonsCount = await Lesson.countDocuments({ course: course._id });
+          return {
+            _id: course._id,
+            title: course.title,
+            coverImage: course.coverImage,
+            tags: course.tags,
+            isPublished: course.isPublished,
+            lessonsCount,
+            responsible: course.responsible,
+          };
+        })
+      );
+    } else if (req.user.role === 'learner') {
+      const enrollments = await Enrollment.find({ learner: req.user._id })
+        .populate('course', 'title coverImage description tags accessRule price isPublished');
+
+      courses = await Promise.all(
+        enrollments.map(async (enrollment) => {
+          const totalLessons = await Lesson.countDocuments({ course: enrollment.course._id });
+          const completedCount = await LessonProgress.countDocuments({
+            enrollment: enrollment._id,
+            status: 'completed',
+          });
+
+          const completionPct = totalLessons > 0
+            ? Math.round((completedCount / totalLessons) * 100)
+            : 0;
+
+          return {
+            _id: enrollment._id,
+            status: enrollment.status,
+            completionPct,
+            course: enrollment.course,
+          };
+        })
+      );
+    }
+
+    return res.status(200).json({
+      user: {
+        _id: req.user._id,
+        name: req.user.name,
+        email: req.user.email,
+        role: req.user.role,
+        totalPoints: req.user.totalPoints,
+        badgeLevel: req.user.badgeLevel,
+        avatar: req.user.avatar,
+      },
+      courses,
+    });
+  } catch (err) {
+    return res.status(500).json({ message: err.message });
+  }
 });
 
 const logout = asyncHandler(async (req, res) => {
