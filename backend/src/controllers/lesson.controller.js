@@ -1,121 +1,97 @@
+// FILE: server/controllers/lesson.controller.js
+// STATUS: MODIFIED
+// PURPOSE: Manage lessons and attachment payloads for learner player and admin tools.
+// ⚠️ WARNING: This file was modified. Review changes carefully before merging.
+
 import Lesson from '../models/Lesson.js';
 import Attachment from '../models/Attachment.js';
 
-// Get all lessons for a course
 export const getLessons = async (req, res) => {
   try {
-    const { courseId } = req.params;
-    const lessons = await Lesson.find({ course: courseId })
+    const lessons = await Lesson.find({ course: req.params.courseId })
       .sort('order')
-      .populate('responsible', 'name avatar');
+      .lean();
 
-    // Attach attachments for each lesson
     const withAttachments = await Promise.all(
       lessons.map(async (lesson) => {
-        const attachments = await Attachment.find({ lesson: lesson._id });
-        return {
-          ...lesson.toObject(),
-          attachments
-        };
+        const attachments = await Attachment.find({ lesson: lesson._id }).lean();
+        return { ...lesson, attachments };
       })
     );
 
-    res.json(withAttachments);
-  } catch (err) {
-    res.status(500).json({ message: err.message });
+    return res.json(withAttachments);
+  } catch (error) {
+    return res.status(500).json({ message: error.message });
   }
 };
 
-// Create lesson
 export const createLesson = async (req, res) => {
   try {
-    const { courseId } = req.params;
-    const { title, type, order, description, videoUrl, fileUrl, imageUrl, durationMins, allowDownload, attachments } = req.body;
-
-    if (!title || !type) {
-      return res.status(400).json({ message: 'Title and type are required' });
-    }
-
+    const { attachments, ...lessonData } = req.body;
     const lesson = await Lesson.create({
-      course: courseId,
-      title,
-      type,
-      order: order || 0,
-      description: description || '',
-      videoUrl: videoUrl || '',
-      fileUrl: fileUrl || '',
-      imageUrl: imageUrl || '',
-      durationMins: durationMins || 0,
-      allowDownload: allowDownload || false,
-      responsible: req.user._id
+      ...lessonData,
+      course: req.params.courseId,
+      responsible: req.user._id,
     });
 
-    // Add attachments if provided
-    if (attachments && attachments.length > 0) {
+    if (Array.isArray(attachments) && attachments.length > 0) {
       await Attachment.insertMany(
-        attachments.map((att) => ({
-          ...att,
-          lesson: lesson._id
+        attachments.map((item) => ({
+          ...item,
+          lesson: lesson._id,
         }))
       );
     }
 
-    res.status(201).json(lesson);
-  } catch (err) {
-    res.status(500).json({ message: err.message });
+    return res.status(201).json(lesson);
+  } catch (error) {
+    return res.status(500).json({ message: error.message });
   }
 };
 
-// Update lesson
 export const updateLesson = async (req, res) => {
   try {
-    const { id } = req.params;
     const { attachments, ...lessonData } = req.body;
 
-    const lesson = await Lesson.findByIdAndUpdate(id, lessonData, {
+    const lesson = await Lesson.findByIdAndUpdate(req.params.id, lessonData, {
       new: true,
-      runValidators: true
+      runValidators: true,
     });
 
     if (!lesson) {
       return res.status(404).json({ message: 'Lesson not found' });
     }
 
-    // Handle attachments
-    if (attachments) {
-      await Attachment.deleteMany({ lesson: id });
+    if (Array.isArray(attachments)) {
+      await Attachment.deleteMany({ lesson: req.params.id });
       if (attachments.length > 0) {
         await Attachment.insertMany(
-          attachments.map((att) => ({
-            ...att,
-            lesson: id
+          attachments.map((item) => ({
+            ...item,
+            lesson: req.params.id,
           }))
         );
       }
     }
 
-    res.json(lesson);
-  } catch (err) {
-    res.status(500).json({ message: err.message });
+    return res.json(lesson);
+  } catch (error) {
+    return res.status(500).json({ message: error.message });
   }
 };
 
-// Delete lesson
 export const deleteLesson = async (req, res) => {
   try {
-    const { id } = req.params;
-
-    const lesson = await Lesson.findByIdAndDelete(id);
+    const lesson = await Lesson.findByIdAndDelete(req.params.id);
 
     if (!lesson) {
       return res.status(404).json({ message: 'Lesson not found' });
     }
 
-    // Delete associated attachments
-    await Attachment.deleteMany({ lesson: id });
+    await Attachment.deleteMany({ lesson: req.params.id });
 
-    res.json({ message: 'Lesson deleted successfully' });
-  } catch (err) {
-    res.status(500).json({ message: err.message });
+    return res.json({ message: 'Lesson deleted' });
+  } catch (error) {
+    return res.status(500).json({ message: error.message });
   }
 };

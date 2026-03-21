@@ -3,14 +3,14 @@ import cors from "cors"
 import cookieParser from "cookie-parser"
 
 // Import routes
-import authRoutes from "./routes/auth.route.js"
-import courseRoutes from "./routes/course.route.js"
-import lessonRoutes from "./routes/lesson.route.js"
-import quizRoutes from "./routes/quiz.route.js"
-import enrollmentRoutes from "./routes/enrollment.route.js"
-import progressRoutes from "./routes/progress.route.js"
-import reviewRoutes from "./routes/review.route.js"
-import reportingRoutes from "./routes/reporting.route.js"
+import authRoutes from "./routes/auth.routes.js"
+import courseRoutes from "./routes/course.routes.js"
+import lessonRoutes from "./routes/lesson.routes.js"
+import quizRoutes from "./routes/quiz.routes.js"
+import enrollmentRoutes from "./routes/enrollment.routes.js"
+import progressRoutes from "./routes/progress.routes.js"
+import reviewRoutes from "./routes/review.routes.js"
+import reportingRoutes from "./routes/reporting.routes.js"
 
 const app = express()
 

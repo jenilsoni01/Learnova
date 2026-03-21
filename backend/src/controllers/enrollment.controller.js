@@ -1,40 +1,36 @@
+// FILE: server/controllers/enrollment.controller.js
+// STATUS: MODIFIED
+// PURPOSE: Handle learner enrollments, computed completion, and instructor visibility.
+// ⚠️ WARNING: This file was modified. Review changes carefully before merging.
+
 import Enrollment from '../models/Enrollment.js';
 import Course from '../models/Course.js';
+import { computeCompletionPct } from '../utils/progress.utils.js';
 
-// Get user enrollments
-export const getUserEnrollments = async (req, res) => {
+export const getMyEnrollments = async (req, res) => {
   try {
     const enrollments = await Enrollment.find({ learner: req.user._id })
-      .populate('course', 'title coverImage')
+      .populate('course', 'title coverImage description tags accessRule price')
       .sort('-enrolledAt');
 
-    res.json(enrollments);
-  } catch (err) {
-    res.status(500).json({ message: err.message });
+    const result = await Promise.all(
+      enrollments.map(async (enrollment) => {
+        const completion = await computeCompletionPct(enrollment._id, enrollment.course._id);
+        return {
+          _id: enrollment._id,
+          status: enrollment.status,
+          completionPct: completion.completionPct,
+          course: enrollment.course,
+        };
+      })
+    );
+
+    return res.json(result);
+  } catch (error) {
+    return res.status(500).json({ message: error.message });
   }
 };
 
-// Get course enrollments (instructor/admin)
-export const getCourseEnrollments = async (req, res) => {
-  try {
-    const { courseId } = req.params;
-
-    const course = await Course.findById(courseId);
-    if (!course) {
-      return res.status(404).json({ message: 'Course not found' });
-    }
-
-    const enrollments = await Enrollment.find({ course: courseId })
-      .populate('learner', 'name email avatar')
-      .sort('-enrolledAt');
-
-    res.json(enrollments);
-  } catch (err) {
-    res.status(500).json({ message: err.message });
-  }
-};
-
-// Enroll user in course
 export const enrollCourse = async (req, res) => {
   try {
     const { courseId } = req.params;
@@ -44,71 +40,46 @@ export const enrollCourse = async (req, res) => {
       return res.status(404).json({ message: 'Course not found' });
     }
 
-    // Check if already enrolled
-    const existing = await Enrollment.findOne({ course: courseId, learner: req.user._id });
+    const existing = await Enrollment.findOne({
+      course: courseId,
+      learner: req.user._id,
+    });
+
     if (existing) {
-      return res.status(400).json({ message: 'Already enrolled in this course' });
+      return res.json(existing);
     }
 
     const enrollment = await Enrollment.create({
       course: courseId,
       learner: req.user._id,
-      status: 'yet_to_start'
+      status: 'yet_to_start',
     });
 
-    res.status(201).json(enrollment);
-  } catch (err) {
-    res.status(500).json({ message: err.message });
+    return res.status(201).json(enrollment);
+  } catch (error) {
+    return res.status(500).json({ message: error.message });
   }
 };
 
-// Update enrollment status
-export const updateEnrollmentStatus = async (req, res) => {
+export const getCourseEnrollments = async (req, res) => {
   try {
-    const { id } = req.params;
-    const { status } = req.body;
+    const { courseId } = req.params;
 
-    const validStatuses = ['yet_to_start', 'in_progress', 'completed'];
-    if (!validStatuses.includes(status)) {
-      return res.status(400).json({ message: 'Invalid status' });
+    const course = await Course.findById(courseId);
+    if (!course) {
+      return res.status(404).json({ message: 'Course not found' });
     }
 
-    const enrollment = await Enrollment.findByIdAndUpdate(
-      id,
-      {
-        status,
-        ...(status === 'in_progress' && { startedAt: new Date() }),
-        ...(status === 'completed' && { completedAt: new Date() })
-      },
-      { new: true }
-    );
-
-    if (!enrollment) {
-      return res.status(404).json({ message: 'Enrollment not found' });
+    if (req.user.role !== 'admin' && String(course.createdBy) !== String(req.user._id)) {
+      return res.status(403).json({ message: 'Not authorized to view this course enrollments' });
     }
 
-    res.json(enrollment);
-  } catch (err) {
-    res.status(500).json({ message: err.message });
-  }
-};
+    const enrollments = await Enrollment.find({ course: courseId })
+      .populate('learner', 'name email avatar totalPoints badgeLevel')
+      .sort('-enrolledAt');
 
-// Track time spent
-export const trackTimeSpent = async (req, res) => {
-  try {
-    const { id } = req.params;
-    const { minutes } = req.body;
-
-    const enrollment = await Enrollment.findById(id);
-    if (!enrollment) {
-      return res.status(404).json({ message: 'Enrollment not found' });
-    }
-
-    enrollment.timeSpentMins = (enrollment.timeSpentMins || 0) + minutes;
-    await enrollment.save();
-
-    res.json({ timeSpentMins: enrollment.timeSpentMins });
-  } catch (err) {
-    res.status(500).json({ message: err.message });
+    return res.json(enrollments);
+  } catch (error) {
+    return res.status(500).json({ message: error.message });
   }
 };

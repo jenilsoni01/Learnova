@@ -1,5 +1,10 @@
+// FILE: server/models/User.js
+// STATUS: MODIFIED
+// PURPOSE: Define user schema with auth credentials, role, and gamification fields.
+// ⚠️ WARNING: This file was modified. Review changes carefully before merging.
+
 import mongoose from 'mongoose';
-import bcrypt from 'bcryptjs';
+import bcrypt from 'bcrypt';
 
 const userSchema = new mongoose.Schema({
   name: { 

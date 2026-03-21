@@ -1,128 +1,56 @@
+// FILE: server/controllers/review.controller.js
+// STATUS: MODIFIED
+// PURPOSE: Expose course reviews and enrolled learner upsert review submission.
+// ⚠️ WARNING: This file was modified. Review changes carefully before merging.
+
 import Review from '../models/Review.js';
 import Enrollment from '../models/Enrollment.js';
 
-// Get course reviews
 export const getCourseReviews = async (req, res) => {
   try {
-    const { courseId } = req.params;
-
-    const reviews = await Review.find({ course: courseId })
+    const reviews = await Review.find({ course: req.params.courseId })
       .populate('learner', 'name avatar')
       .sort('-createdAt');
 
-    // Calculate average rating
-    const avgRating = reviews.length > 0
-      ? (reviews.reduce((sum, r) => sum + r.rating, 0) / reviews.length).toFixed(1)
-      : 0;
-
-    res.json({
-      courseId,
-      totalReviews: reviews.length,
-      averageRating: parseFloat(avgRating),
-      reviews
-    });
-  } catch (err) {
-    res.status(500).json({ message: err.message });
+    return res.json(reviews);
+  } catch (error) {
+    return res.status(500).json({ message: error.message });
   }
 };
 
-// Create review
-export const createReview = async (req, res) => {
+export const upsertReview = async (req, res) => {
   try {
     const { courseId } = req.params;
     const { rating, reviewText } = req.body;
 
-    // Validation
-    if (!rating || !reviewText) {
-      return res.status(400).json({ message: 'Rating and review text are required' });
+    if (!Number.isInteger(rating) || rating < 1 || rating > 5) {
+      return res.status(400).json({ message: 'rating must be an integer between 1 and 5' });
     }
 
-    if (rating < 1 || rating > 5) {
-      return res.status(400).json({ message: 'Rating must be between 1 and 5' });
+    if (typeof reviewText !== 'string' || reviewText.trim().length < 10) {
+      return res.status(400).json({ message: 'reviewText must be at least 10 characters' });
     }
 
-    if (reviewText.length < 10) {
-      return res.status(400).json({ message: 'Review must be at least 10 characters' });
-    }
-
-    // Check if user is enrolled
-    const enrollment = await Enrollment.findOne({ course: courseId, learner: req.user._id });
-    if (!enrollment) {
-      return res.status(403).json({ message: 'You must be enrolled in this course to review it' });
-    }
-
-    // Check if already reviewed
-    const existing = await Review.findOne({ course: courseId, learner: req.user._id });
-    if (existing) {
-      return res.status(400).json({ message: 'You have already reviewed this course' });
-    }
-
-    const review = await Review.create({
+    const enrollment = await Enrollment.findOne({
       course: courseId,
       learner: req.user._id,
-      rating,
-      reviewText
     });
 
-    res.status(201).json(review);
-  } catch (err) {
-    res.status(500).json({ message: err.message });
-  }
-};
-
-// Update review
-export const updateReview = async (req, res) => {
-  try {
-    const { id } = req.params;
-    const { rating, reviewText } = req.body;
-
-    const review = await Review.findById(id);
-    if (!review) {
-      return res.status(404).json({ message: 'Review not found' });
+    if (!enrollment) {
+      return res.status(403).json({ message: 'You must be enrolled to review this course' });
     }
 
-    if (review.learner.toString() !== req.user._id.toString()) {
-      return res.status(403).json({ message: 'Not authorized to update this review' });
-    }
+    const review = await Review.findOneAndUpdate(
+      { course: courseId, learner: req.user._id },
+      {
+        rating,
+        reviewText: reviewText.trim(),
+      },
+      { new: true, upsert: true, runValidators: true, setDefaultsOnInsert: true }
+    ).populate('learner', 'name avatar');
 
-    if (rating) {
-      if (rating < 1 || rating > 5) {
-        return res.status(400).json({ message: 'Rating must be between 1 and 5' });
-      }
-      review.rating = rating;
-    }
-
-    if (reviewText) {
-      if (reviewText.length < 10) {
-        return res.status(400).json({ message: 'Review must be at least 10 characters' });
-      }
-      review.reviewText = reviewText;
-    }
-
-    await review.save();
-    res.json(review);
-  } catch (err) {
-    res.status(500).json({ message: err.message });
-  }
-};
-
-// Delete review
-export const deleteReview = async (req, res) => {
-  try {
-    const { id } = req.params;
-
-    const review = await Review.findById(id);
-    if (!review) {
-      return res.status(404).json({ message: 'Review not found' });
-    }
-
-    if (review.learner.toString() !== req.user._id.toString()) {
-      return res.status(403).json({ message: 'Not authorized to delete this review' });
-    }
-
-    await Review.findByIdAndDelete(id);
-    res.json({ message: 'Review deleted successfully' });
-  } catch (err) {
-    res.status(500).json({ message: err.message });
+    return res.status(201).json(review);
+  } catch (error) {
+    return res.status(500).json({ message: error.message });
   }
 };

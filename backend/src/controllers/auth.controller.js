@@ -1,8 +1,17 @@
-import jwt from "jsonwebtoken";
-import User from "../models/User.js";
-import { ApiError } from "../utils/ApiError.js";
-import { ApiResponse } from "../utils/ApiResponse.js";
-import { asyncHandler } from "../utils/asyncHandler.js";
+// FILE: server/controllers/auth.controller.js
+// STATUS: MODIFIED
+// PURPOSE: Handle registration, login, token issuance, and authenticated profile retrieval.
+
+import jwt from 'jsonwebtoken';
+import User from '../models/User.js';
+
+// Global Cookie Options
+const cookieOptions = {
+  httpOnly: true, // Prevents client-side JS from reading the cookie
+  secure: process.env.NODE_ENV === 'production', // Requires HTTPS in production
+  sameSite: process.env.NODE_ENV === 'production' ? 'none' : 'lax', // 'none' allows cross-origin on Vercel
+  maxAge: 7 * 24 * 60 * 60 * 1000, // 7 days in milliseconds
+};
 
 const signToken = (id) => {
   return jwt.sign({ id }, process.env.JWT_SECRET, {
@@ -10,86 +19,103 @@ const signToken = (id) => {
   });
 };
 
-const register = asyncHandler(async (req, res) => {
-  const { name, email, password } = req.body;
+const register = async (req, res) => {
+  try {
+    const { name, email, password, role } = req.body;
 
-  if (!name || !email || !password) {
-    const error = new ApiError(400, "Name, email, and password are required");
-    return res.status(error.statusCode).json(error);
-  }
+    if (!name || !email || !password) {
+      return res.status(400).json({ message: 'Name, email, and password are required' });
+    }
 
-  const normalizedEmail = email.toLowerCase().trim();
+    if (password.length < 8) {
+      return res.status(400).json({ message: 'Password must be at least 8 characters long' });
+    }
 
-  const existingUser = await User.findOne({ email: normalizedEmail });
-  if (existingUser) {
-    const error = new ApiError(400, "Email already exists");
-    return res.status(error.statusCode).json(error);
-  }
+    const normalizedEmail = email.toLowerCase().trim();
 
-  const user = await User.create({
-    name: name.trim(),
-    email: normalizedEmail,
-    password,
-  });
+    const existingUser = await User.findOne({ email: normalizedEmail });
+    if (existingUser) {
+      return res.status(400).json({ message: 'Email already exists' });
+    }
 
-  const token = signToken(user._id);
+    const user = await User.create({
+      name: name.trim(),
+      email: normalizedEmail,
+      password,
+      role,
+    });
 
-  return res.status(201).json(
-    new ApiResponse(
-      201,
-      {
-        token,
-        user: {
-          id: user._id,
-          name: user.name,
-          email: user.email,
-        },
+    const token = signToken(user._id);
+    
+    // Set the cookie using the global options
+    res.cookie('token', token, cookieOptions); 
+
+    return res.status(201).json({
+      token,
+      user: {
+        id: user._id,
+        name: user.name,
+        email: user.email,
+        role: user.role,
       },
-      "User registered successfully"
-    )
-  );
-});
-
-const login = asyncHandler(async (req, res) => {
-  const { email, password } = req.body;
-
-  if (!email || !password) {
-    const error = new ApiError(401, "Invalid email or password");
-    return res.status(error.statusCode).json(error);
+    });
+  } catch (error) {
+    return res.status(500).json({ message: error.message });
   }
+};
 
-  const normalizedEmail = email.toLowerCase().trim();
-  const user = await User.findOne({ email: normalizedEmail });
+const login = async (req, res) => {
+  try {
+    const { email, password } = req.body;
 
-  if (!user || !(await user.matchPassword(password))) {
-    const error = new ApiError(401, "Invalid email or password");
-    return res.status(error.statusCode).json(error);
-  }
+    if (!email || !password) {
+      return res.status(401).json({ message: 'Invalid email or password' });
+    }
 
-  const token = signToken(user._id);
+    const normalizedEmail = email.toLowerCase().trim();
+    const user = await User.findOne({ email: normalizedEmail });
 
-  return res.status(200).json(
-    new ApiResponse(
-      200,
-      {
-        token,
-        user: {
-          id: user._id,
-          name: user.name,
-          email: user.email,
-          totalPoints: user.totalPoints,
-          badgeLevel: user.badgeLevel,
-        },
+    if (!user || !(await user.matchPassword(password))) {
+      return res.status(401).json({ message: 'Invalid email or password' });
+    }
+
+    const token = signToken(user._id);
+    
+    // Set the cookie using the global options
+    res.cookie('token', token, cookieOptions); 
+
+    return res.status(200).json({
+      token,
+      user: {
+        id: user._id,
+        name: user.name,
+        email: user.email,
+        role: user.role,
+        totalPoints: user.totalPoints,
+        badgeLevel: user.badgeLevel,
       },
-      "Login successful"
-    )
-  );
-});
+    });
+  } catch (error) {
+    return res.status(500).json({ message: error.message });
+  }
+};
 
-const getMe = asyncHandler(async (req, res) => {
-  return res
-    .status(200)
-    .json(new ApiResponse(200, req.user, "Current user fetched successfully"));
-});
+const getMe = async (req, res) => {
+  try {
+    return res.status(200).json(req.user);
+  } catch (error) {
+    return res.status(500).json({ message: error.message });
+  }
+};
 
-export { signToken, register, login, getMe };
+const logout = async (req, res) => {
+  try {
+    // Clear the cookie using the exact same global options
+    res.clearCookie('token', cookieOptions);
+    return res.status(200).json({ message: 'Logged out successfully' });
+  } catch (error) {
+    return res.status(500).json({ message: error.message });
+  }
+};
+
+export { signToken, register, login, getMe, logout };

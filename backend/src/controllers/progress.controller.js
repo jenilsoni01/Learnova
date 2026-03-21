@@ -1,99 +1,136 @@
-import LessonProgress from '../models/LessonProgress.js';
+// FILE: server/controllers/progress.controller.js
+// STATUS: MODIFIED
+// PURPOSE: Compute and update learner course progress and completion lifecycle.
+// ⚠️ WARNING: This file was modified. Review changes carefully before merging.
+
 import Enrollment from '../models/Enrollment.js';
+import LessonProgress from '../models/LessonProgress.js';
 import Lesson from '../models/Lesson.js';
+import { computeCompletionPct } from '../utils/progress.utils.js';
 
-// Get lesson progress for enrollment
-export const getEnrollmentProgress = async (req, res) => {
+export const getCourseProgress = async (req, res) => {
   try {
-    const { enrollmentId } = req.params;
+    const { courseId } = req.params;
 
-    const enrollment = await Enrollment.findById(enrollmentId).populate('course', 'title');
+    const enrollment = await Enrollment.findOne({
+      course: courseId,
+      learner: req.user._id,
+    });
+
+    const lessons = await Lesson.find({ course: courseId })
+      .select('title type order')
+      .sort('order')
+      .lean();
+
     if (!enrollment) {
-      return res.status(404).json({ message: 'Enrollment not found' });
+      return res.json({
+        enrolled: false,
+        enrollment: null,
+        lessons: lessons.map((lesson) => ({ ...lesson, status: 'not_started' })),
+        completionPct: 0,
+        completedCount: 0,
+        totalLessons: lessons.length,
+      });
     }
 
-    const lessonsProgress = await LessonProgress.find({ enrollment: enrollmentId })
-      .populate('lesson', 'title type order');
+    const progressRows = await LessonProgress.find({ enrollment: enrollment._id }).lean();
+    const progressMap = new Map(progressRows.map((row) => [String(row.lesson), row.status]));
 
-    // Calculate overall progress percentage
-    const totalLessons = await Lesson.countDocuments({ course: enrollment.course._id });
-    const completedLessons = lessonsProgress.filter((lp) => lp.status === 'completed').length;
-    const progressPercentage = totalLessons > 0 ? Math.round((completedLessons / totalLessons) * 100) : 0;
+    const lessonsWithStatus = lessons.map((lesson) => ({
+      ...lesson,
+      status: progressMap.get(String(lesson._id)) || 'not_started',
+    }));
 
-    res.json({
-      enrollmentId,
-      courseTitle: enrollment.course.title,
-      totalLessons,
-      completedLessons,
-      progressPercentage,
-      lessons: lessonsProgress
+    const completion = await computeCompletionPct(enrollment._id, courseId);
+
+    return res.json({
+      enrolled: true,
+      enrollment,
+      lessons: lessonsWithStatus,
+      completionPct: completion.completionPct,
+      completedCount: completion.completedCount,
+      totalLessons: completion.totalLessons,
     });
-  } catch (err) {
-    res.status(500).json({ message: err.message });
+  } catch (error) {
+    return res.status(500).json({ message: error.message });
   }
 };
 
-// Update lesson progress
 export const updateLessonProgress = async (req, res) => {
   try {
-    const { id } = req.params;
-    const { status } = req.body;
+    const { courseId } = req.params;
+    const { lessonId, status } = req.body;
 
-    const validStatuses = ['not_started', 'in_progress', 'completed'];
-    if (!validStatuses.includes(status)) {
-      return res.status(400).json({ message: 'Invalid status' });
+    if (!lessonId || !['in_progress', 'completed'].includes(status)) {
+      return res
+        .status(400)
+        .json({ message: "lessonId and valid status ('in_progress'|'completed') are required" });
     }
 
-    let progress = await LessonProgress.findById(id);
+    const enrollment = await Enrollment.findOne({
+      course: courseId,
+      learner: req.user._id,
+    });
 
-    if (!progress) {
-      return res.status(404).json({ message: 'Lesson progress not found' });
+    if (!enrollment) {
+      return res.status(403).json({ message: 'You are not enrolled in this course' });
     }
 
-    progress.status = status;
-    if (status === 'completed') {
-      progress.completedAt = new Date();
+    const lesson = await Lesson.findOne({ _id: lessonId, course: courseId });
+    if (!lesson) {
+      return res.status(404).json({ message: 'Lesson not found for this course' });
     }
 
-    await progress.save();
-    res.json(progress);
-  } catch (err) {
-    res.status(500).json({ message: err.message });
+    await LessonProgress.findOneAndUpdate(
+      { enrollment: enrollment._id, lesson: lessonId },
+      {
+        status,
+        ...(status === 'completed' ? { completedAt: new Date() } : {}),
+      },
+      { upsert: true, new: true, setDefaultsOnInsert: true }
+    );
+
+    if (enrollment.status === 'yet_to_start') {
+      enrollment.status = 'in_progress';
+      enrollment.startedAt = enrollment.startedAt || new Date();
+      await enrollment.save();
+    }
+
+    const completion = await computeCompletionPct(enrollment._id, courseId);
+
+    return res.json({
+      completionPct: completion.completionPct,
+      completedCount: completion.completedCount,
+      totalLessons: completion.totalLessons,
+    });
+  } catch (error) {
+    return res.status(500).json({ message: error.message });
   }
 };
 
-// Initialize lesson progress for new enrollment
-export const initializeLessonProgress = async (req, res) => {
+export const completeCourse = async (req, res) => {
   try {
-    const { enrollmentId } = req.params;
+    const { courseId } = req.params;
 
-    const enrollment = await Enrollment.findById(enrollmentId).populate('course');
-    if (!enrollment) {
-      return res.status(404).json({ message: 'Enrollment not found' });
-    }
-
-    const lessons = await Lesson.find({ course: enrollment.course._id }).sort('order');
-
-    // Create progress record for each lesson if not already exists
-    const progressRecords = [];
-    for (const lesson of lessons) {
-      const existing = await LessonProgress.findOne({ enrollment: enrollmentId, lesson: lesson._id });
-      if (!existing) {
-        const progress = await LessonProgress.create({
-          enrollment: enrollmentId,
-          lesson: lesson._id,
-          status: 'not_started'
-        });
-        progressRecords.push(progress);
-      }
-    }
-
-    res.json({
-      message: 'Lesson progress initialized',
-      created: progressRecords.length,
-      progress: progressRecords
+    const enrollment = await Enrollment.findOne({
+      course: courseId,
+      learner: req.user._id,
     });
-  } catch (err) {
-    res.status(500).json({ message: err.message });
+
+    if (!enrollment) {
+      return res.status(403).json({ message: 'You are not enrolled in this course' });
+    }
+
+    enrollment.status = 'completed';
+    enrollment.completedAt = new Date();
+    if (!enrollment.startedAt) {
+      enrollment.startedAt = new Date();
+    }
+
+    await enrollment.save();
+
+    return res.json(enrollment);
+  } catch (error) {
+    return res.status(500).json({ message: error.message });
   }
 };
