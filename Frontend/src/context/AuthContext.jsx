@@ -11,7 +11,7 @@ export const AuthProvider = ({ children }) => {
     const checkUser = async () => {
       try {
         const response = await api.get('/auth/me');
-        setUser(response.data);
+        setUser(response.data.data); // ApiResponse uses .data for payload
       } catch (error) {
         setUser(null);
       } finally {
@@ -23,13 +23,13 @@ export const AuthProvider = ({ children }) => {
 
   const login = async (email, password) => {
     const response = await api.post('/auth/login', { email, password });
-    setUser(response.data.user);
+    setUser(response.data.data.user); 
     return response.data;
   };
 
-  const register = async (name, email, password) => {
-    const response = await api.post('/auth/register', { name, email, password });
-    setUser(response.data.user);
+  const register = async (formData) => {
+    const response = await api.post('/auth/register', formData);
+    setUser(response.data.data.user); 
     return response.data;
   };
 

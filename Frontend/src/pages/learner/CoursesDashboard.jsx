@@ -1,4 +1,5 @@
-import React, { useState } from 'react';
+import React, { useState, useEffect } from 'react';
+import { SkeletonCard } from '../../components/common/Skeleton';
 import './CoursesDashboard.css';
 
 const MOCK_USER = {
@@ -25,7 +26,7 @@ const MOCK_COURSES = [
     tags: ['Odoo', 'CRM'],
     price: 0, 
     lessonsCount: 12,
-    status: 'Start' // or 'Continue'
+    status: 'Start' 
   },
   {
     _id: '2',
@@ -33,7 +34,7 @@ const MOCK_COURSES = [
     description: 'Deep dive into advanced sales pipelines, routing setups, and custom automations.',
     coverImage: 'https://images.unsplash.com/photo-1460925895917-afdab827c52f?w=600&auto=format&fit=crop&q=60',
     tags: ['Odoo', 'Advance'],
-    price: 500, // INR 500
+    price: 500, 
     lessonsCount: 24,
     status: 'Buy'
   }
@@ -41,7 +42,14 @@ const MOCK_COURSES = [
 
 const CoursesDashboard = () => {
   const [search, setSearch] = useState('');
-  const [isProfileOpen, setIsProfileOpen] = useState(false); // Mobile toggle
+  const [isProfileOpen, setIsProfileOpen] = useState(false); 
+  const [loading, setLoading] = useState(true);
+
+  useEffect(() => {
+    // Simulate API loading time
+    const timer = setTimeout(() => setLoading(false), 1500);
+    return () => clearTimeout(timer);
+  }, []);
 
   const filtered = MOCK_COURSES.filter(c =>
     c.title.toLowerCase().includes(search.toLowerCase())
@@ -92,31 +100,37 @@ const CoursesDashboard = () => {
             <h3>My Courses</h3>
           </div>
 
-          <div className="courses-grid">
-            {filtered.map(course => (
-              <div key={course._id} className="course-card">
-                <div 
-                  className="course-banner" 
-                  style={{ backgroundImage: `url(${course.coverImage})` }}
-                >
-                  {course.price > 0 && <span className="badge paid">Paid</span>}
-                </div>
-                <div className="course-content">
-                  <div className="tags">
-                    {course.tags.map((t, idx) => <span key={idx} className="tag">{t}</span>)}
+          {loading ? (
+            <div className="courses-grid">
+              {[1, 2].map(i => <SkeletonCard key={i} />)}
+            </div>
+          ) : (
+            <div className="courses-grid">
+              {filtered.map(course => (
+                <div key={course._id} className="course-card">
+                  <div 
+                    className="course-banner" 
+                    style={{ backgroundImage: `url(${course.coverImage})` }}
+                  >
+                    {course.price > 0 && <span className="badge paid">Paid</span>}
                   </div>
-                  <h4>{course.title}</h4>
-                  <p>{course.description}</p>
-                  <div className="course-footer">
-                    <button className={`action-btn ${course.status === 'Buy' ? 'buy' : 'join'}`}>
-                      {course.status === 'Buy' ? `Buy Course` : course.status === 'Continue' ? 'Continue' : 'Join Course'}
-                    </button>
-                    {course.price > 0 && <div className="price-tag">INR {course.price}</div>}
+                  <div className="course-content">
+                    <div className="tags">
+                      {course.tags.map((t, idx) => <span key={idx} className="tag">{t}</span>)}
+                    </div>
+                    <h4>{course.title}</h4>
+                    <p>{course.description}</p>
+                    <div className="course-footer">
+                      <button className={`action-btn ${course.status === 'Buy' ? 'buy' : 'join'}`}>
+                        {course.status === 'Buy' ? `Buy Course` : course.status === 'Continue' ? 'Continue' : 'Join Course'}
+                      </button>
+                      {course.price > 0 && <div className="price-tag">INR {course.price}</div>}
+                    </div>
                   </div>
                 </div>
-              </div>
-            ))}
-          </div>
+              ))}
+            </div>
+          )}
         </div>
 
         {/* Backdrop overlay for mobile sidebar */}

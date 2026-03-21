@@ -5,11 +5,12 @@ import Toast from '../../components/common/Toast'
 import { useAuth } from '../../context/AuthContext'
 
 function Auth() {
-  const { login, register: apiRegister } = useAuth()
+  const { user , login, register: apiRegister } = useAuth()
   const navigate = useNavigate()
   const location = useLocation()
   const [isLogin, setIsLogin] = useState(true)
   const [toast, setToast] = useState(null)
+  const [showPassword, setShowPassword] = useState(false)
   
   const [formData, setFormData] = useState({
     name: '',
@@ -77,8 +78,16 @@ function Auth() {
       if (isLogin) {
         await login(formData.email, formData.password);
         setToast({ message: 'Welcome back! Login successful', type: 'success' });
+        console.log(user)
       } else {
-        await apiRegister(formData.name, formData.email, formData.password);
+        const data = new FormData();
+        data.append('name', formData.name);
+        data.append('email', formData.email);
+        data.append('password', formData.password);
+        if (formData.avatar) {
+          data.append('avatar', formData.avatar);
+        }
+        await apiRegister(data);
         setToast({ message: 'Account created successfully!', type: 'success' });
       }
       setTimeout(() => navigate('/'), 1500);
@@ -138,28 +147,40 @@ function Auth() {
 
           <div className="form-group">
             <label htmlFor="password">Password</label>
-            <input
-              type="password"
-              id="password"
-              name="password"
-              value={formData.password}
-              onChange={handleInputChange}
-              placeholder="Enter your password"
-            />
+            <div className="input-with-icon">
+              <input
+                type={showPassword ? "text" : "password"}
+                id="password"
+                name="password"
+                value={formData.password}
+                onChange={handleInputChange}
+                placeholder="Enter your password"
+              />
+              <button 
+                type="button" 
+                className="eye-toggle" 
+                onClick={() => setShowPassword(!showPassword)}
+                aria-label={showPassword ? "Hide password" : "Show password"}
+              >
+                {showPassword ? "👁️" : "👁️‍🗨️"}
+              </button>
+            </div>
           </div>
 
           {!isLogin && (
             <>
               <div className="form-group">
                 <label htmlFor="confirmPassword">Confirm Password</label>
-                <input
-                  type="password"
-                  id="confirmPassword"
-                  name="confirmPassword"
-                  value={formData.confirmPassword}
-                  onChange={handleInputChange}
-                  placeholder="Confirm your password"
-                />
+                <div className="input-with-icon">
+                  <input
+                    type={showPassword ? "text" : "password"}
+                    id="confirmPassword"
+                    name="confirmPassword"
+                    value={formData.confirmPassword}
+                    onChange={handleInputChange}
+                    placeholder="Confirm your password"
+                  />
+                </div>
               </div>
 
               <div className="form-group">

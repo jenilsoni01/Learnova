@@ -5,12 +5,14 @@
 
 import jwt from 'jsonwebtoken';
 import User from '../models/User.js';
+import { ApiError } from '../utils/ApiError.js';
 
 const resolveToken = (req) => {
   const authHeader = req.headers.authorization;
-  if (authHeader?.startsWith('Bearer ')) {
-    return authHeader.split(' ')[1];
-  }
+  if (authHeader?.startsWith('Bearer ')) return authHeader.split(' ')[1];
+  
+  if (req.cookies && req.cookies.token) return req.cookies.token; 
+  
   return null;
 };
 
@@ -19,20 +21,23 @@ const protect = async (req, res, next) => {
     const token = resolveToken(req);
 
     if (!token) {
-      return res.status(401).json({ message: 'Not authorized, no token' });
+      throw new ApiError(401, 'Not authorized, no token');
     }
 
     const decoded = jwt.verify(token, process.env.JWT_SECRET);
     const user = await User.findById(decoded.id).select('-password');
 
     if (!user) {
-      return res.status(401).json({ message: 'Not authorized, user not found' });
+      throw new ApiError(401, 'Not authorized, user not found');
     }
 
     req.user = user;
     return next();
-  } catch {
-    return res.status(401).json({ message: 'Token invalid or expired' });
+  } catch (error) {
+    if (error instanceof ApiError) {
+      return next(error);
+    }
+    return next(new ApiError(401, 'Token invalid or expired'));
   }
 };
 
