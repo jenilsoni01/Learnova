@@ -1,0 +1,405 @@
+/* =========================================
+   Learner Dashboard — Wireframe Remapped
+   ========================================= */
+
+.dashboard {
+  min-height: 100vh;
+  background: radial-gradient(circle at 10% 20%, rgba(99, 102, 241, 0.08), transparent 40%),
+              radial-gradient(circle at 90% 80%, rgba(236, 72, 153, 0.04), transparent 40%),
+              #070a13;
+  color: #f8fafc;
+  padding-bottom: 60px;
+}
+
+.dashboard .container {
+  max-width: 1200px;
+  margin: 0 auto;
+  padding: 0 24px;
+}
+
+/* -----------------------------------------
+   Top Navbar
+   ----------------------------------------- */
+.dashboard .navbar {
+  position: sticky;
+  top: 0;
+  z-index: 100;
+  background: rgba(7, 10, 19, 0.75);
+  backdrop-filter: blur(16px);
+  -webkit-backdrop-filter: blur(16px);
+  border-bottom: 1px solid rgba(255, 255, 255, 0.03);
+  padding: 0.85rem 0;
+}
+
+.dashboard .nav-content {
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
+}
+
+.dashboard .logo {
+  font-size: 1.35rem;
+  font-weight: 800;
+  background: linear-gradient(135deg, #6366f1 0%, #a855f7 100%);
+  -webkit-background-clip: text;
+  background-clip: text;
+  -webkit-text-fill-color: transparent;
+}
+
+.dashboard .nav-toolbar {
+  display: flex;
+  align-items: center;
+  gap: 1.5rem;
+}
+
+.dashboard .search-bar input {
+  background: rgba(255, 255, 255, 0.02);
+  border: 1px solid rgba(255, 255, 255, 0.05);
+  padding: 8px 14px;
+  border-radius: 10px;
+  color: white;
+  font-size: 0.85rem;
+  width: 250px;
+  transition: all 0.3s;
+}
+
+.dashboard .search-bar input:focus {
+  outline: none;
+  border-color: rgba(99, 102, 241, 0.3);
+  background: rgba(255, 255, 255, 0.04);
+}
+
+.dashboard .user-profile {
+  display: flex;
+  align-items: center;
+  gap: 10px;
+  background: rgba(255, 255, 255, 0.02);
+  padding: 5px 12px;
+  border-radius: 16px;
+  border: 1px solid rgba(255, 255, 255, 0.05);
+}
+
+.dashboard .avatar-stub {
+  width: 28px;
+  height: 28px;
+  border-radius: 50%;
+  background: linear-gradient(135deg, #ec4899, #8b5cf6);
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  font-weight: 600;
+  font-size: 0.8rem;
+  color: white;
+}
+
+.dashboard .mobile-bio-btn {
+  display: none; /* Desktop hidden */
+}
+
+/* -----------------------------------------
+   Main Layout Container
+   ----------------------------------------- */
+.dashboard-layout {
+  display: grid;
+  grid-template-columns: 1fr 320px; /* main content, then sidebar */
+  gap: 2rem;
+  margin-top: 30px;
+  align-items: start;
+}
+
+/* -----------------------------------------
+   Main Content: Courses
+   ----------------------------------------- */
+.dashboard .grid-header h3 {
+  font-size: 1.5rem;
+  margin-bottom: 20px;
+  font-weight: 700;
+  background: linear-gradient(to right, #fff, #94a3b8);
+  -webkit-background-clip: text;
+  background-clip: text;
+  -webkit-text-fill-color: transparent;
+}
+
+.dashboard .courses-grid {
+  display: grid;
+  grid-template-columns: repeat(auto-fill, minmax(260px, 1fr));
+  gap: 1.25rem;
+}
+
+.dashboard .course-card {
+  background: rgba(255, 255, 255, 0.01);
+  border: 1px solid rgba(255, 255, 255, 0.03);
+  border-radius: 16px;
+  overflow: hidden;
+  transition: all 0.3s ease;
+  position: relative;
+}
+
+.dashboard .course-card:hover {
+  transform: translateY(-4px);
+  border-color: rgba(99, 102, 241, 0.15);
+  box-shadow: 0 12px 30px -10px rgba(0,0,0,0.5);
+}
+
+.dashboard .course-banner {
+  height: 140px;
+  background-size: cover;
+  background-position: center;
+  position: relative;
+}
+
+.dashboard .badge {
+  position: absolute;
+  top: 10px;
+  right: 10px;
+  padding: 3px 8px;
+  border-radius: 12px;
+  font-size: 0.65rem;
+  font-weight: 600;
+  backdrop-filter: blur(4px);
+}
+
+.dashboard .badge.paid {
+  background: rgba(245, 158, 11, 0.15);
+  color: #f59e0b;
+  border: 1px solid rgba(245, 158, 11, 0.3);
+}
+
+.dashboard .course-content {
+  padding: 1.25rem;
+}
+
+.dashboard .tags {
+  display: flex;
+  gap: 5px;
+  margin-bottom: 10px;
+}
+
+.dashboard .tag {
+  background: rgba(99, 102, 241, 0.06);
+  color: #818cf8;
+  font-size: 0.65rem;
+  padding: 2px 6px;
+  border-radius: 4px;
+}
+
+.dashboard .course-content h4 {
+  font-size: 1rem;
+  margin-bottom: 6px;
+}
+
+.dashboard .course-content p {
+  font-size: 0.8rem;
+  color: #64748b;
+  height: 34px;
+  overflow: hidden;
+  text-overflow: ellipsis;
+  display: -webkit-box;
+  -webkit-line-clamp: 2;
+  line-clamp: 2;
+  -webkit-box-orient: vertical;
+  margin-bottom: 12px;
+}
+
+.dashboard .course-footer {
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
+}
+
+.dashboard .action-btn {
+  padding: 6px 12px;
+  border-radius: 8px;
+  font-size: 0.75rem;
+  font-weight: 600;
+  border: none;
+  cursor: pointer;
+  transition: all 0.2s;
+}
+
+.dashboard .action-btn.join {
+  background: linear-gradient(135deg, #6366f1 0%, #4f46e5 100%);
+  color: white;
+}
+
+.dashboard .action-btn.buy {
+  background: rgba(245, 158, 11, 0.1);
+  color: #f59e0b;
+  border: 1px solid rgba(245, 158, 11, 0.2);
+}
+
+.dashboard .price-tag {
+  font-size: 0.85rem;
+  font-weight: 700;
+  color: #cbd5e1;
+}
+
+/* -----------------------------------------
+   Sidebar: Profile & Badges
+   ----------------------------------------- */
+.dashboard .profile-sidebar {
+  background: rgba(255, 255, 255, 0.015);
+  border: 1px solid rgba(255, 255, 255, 0.03);
+  border-radius: 16px;
+  padding: 1.5rem;
+  backdrop-filter: blur(12px);
+  position: sticky;
+  top: 90px;
+}
+
+.dashboard .profile-section h4,
+.dashboard .badges-section h4 {
+  font-size: 1rem;
+  margin-bottom: 1rem;
+  color: #cbd5e1;
+  border-bottom: 1px solid rgba(255, 255, 255, 0.03);
+  padding-bottom: 8px;
+}
+
+.dashboard .progress-container {
+  position: relative;
+  width: 120px;
+  height: 120px;
+  margin: 0 auto 1.5rem;
+}
+
+.dashboard .progress-circle {
+  transform: rotate(-90deg);
+}
+
+.dashboard .bg-ring {
+  fill: none;
+  stroke: rgba(255, 255, 255, 0.03);
+  stroke-width: 6px;
+}
+
+.dashboard .fg-ring {
+  fill: none;
+  stroke: #6366f1;
+  stroke-width: 6px;
+  stroke-linecap: round;
+  transition: stroke-dashoffset 0.5s ease;
+}
+
+.dashboard .progress-text {
+  position: absolute;
+  top: 50%;
+  left: 50%;
+  transform: translate(-50%, -50%);
+  text-align: center;
+}
+
+.dashboard .total-points {
+  font-size: 0.7rem;
+  font-weight: 500;
+  color: #64748b;
+}
+
+.dashboard .current-badge {
+  font-size: 1.1rem;
+  font-weight: 800;
+  color: #fff;
+  background: linear-gradient(135deg, #a5b4fc, #818cf8);
+  -webkit-background-clip: text;
+  background-clip: text;
+  -webkit-text-fill-color: transparent;
+}
+
+.dashboard .badges-list {
+  list-style: none;
+  padding: 0;
+  display: flex;
+  flex-direction: column;
+  gap: 8px;
+}
+
+.dashboard .badge-item {
+  display: flex;
+  justify-content: space-between;
+  padding: 8px 12px;
+  border-radius: 8px;
+  font-size: 0.8rem;
+  background: rgba(255, 255, 255, 0.01);
+  border: 1px solid transparent;
+}
+
+.dashboard .badge-item.unlocked {
+  border-color: rgba(34, 197, 94, 0.1);
+  color: #a7f3d0;
+}
+
+.dashboard .badge-item.locked {
+  color: #475569;
+}
+
+.dashboard .badge-points {
+  font-size: 0.75rem;
+  color: #64748b;
+}
+
+.dashboard .sidebar-footer-note {
+  font-size: 0.7rem;
+  color: #475569;
+  text-align: center;
+  margin-top: 1.5rem;
+}
+
+/* -----------------------------------------
+   Responsive Design (Wireframe Mobile Conditioned)
+   ----------------------------------------- */
+@media (max-width: 1024px) {
+  .dashboard .dashboard-layout {
+    grid-template-columns: 1fr; /* Stack */
+  }
+
+  .dashboard .mobile-bio-btn {
+    display: block;
+    background: rgba(255, 255, 255, 0.05);
+    border: 1px solid rgba(255, 255, 255, 0.08);
+    color: white;
+    padding: 6px 12px;
+    border-radius: 10px;
+    font-size: 0.8rem;
+    cursor: pointer;
+  }
+
+  .dashboard .user-profile {
+    display: none; /* Hide standard profile to save space */
+  }
+
+  /* Overlay Modal Style Side table */
+  .dashboard .profile-sidebar {
+    position: fixed;
+    top: 0;
+    right: 0;
+    bottom: 0;
+    width: 300px;
+    background: rgba(7, 10, 19, 0.95);
+    backdrop-filter: blur(20px);
+    z-index: 1000;
+    transform: translateX(100%);
+    transition: transform 0.4s cubic-bezier(0.4, 0, 0.2, 1);
+    margin-top: 0;
+    border-radius: 0;
+    border-left: 1px solid rgba(255, 255, 255, 0.05);
+    display: flex;
+    flex-direction: column;
+    justify-content: center;
+  }
+
+  .dashboard .profile-sidebar.open {
+    transform: translateX(0);
+  }
+
+  .dashboard .profile-overlay {
+    position: fixed;
+    top: 0; left:0; right:0; bottom: 0;
+    background: rgba(0,0,0,0.5);
+    z-index: 999;
+  }
+}
+
+@media (max-width: 480px) {
+  .dashboard .navbar .search-bar { display: none; } /* Shrink to fit toolbar */
+  .dashboard .courses-grid { grid-template-columns: 1fr; }
+}

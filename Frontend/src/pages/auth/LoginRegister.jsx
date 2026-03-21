@@ -2,8 +2,10 @@ import { useState, useEffect } from 'react'
 import { useNavigate, useLocation } from 'react-router-dom'
 import './Auth.css'
 import Toast from '../../components/common/Toast'
+import { useAuth } from '../../context/AuthContext'
 
 function Auth() {
+  const { login, register: apiRegister } = useAuth()
   const navigate = useNavigate()
   const location = useLocation()
   const [isLogin, setIsLogin] = useState(true)
@@ -35,10 +37,58 @@ function Auth() {
     }
   }
 
-  const handleSubmit = (e) => {
-    e.preventDefault()
-    console.log('Form submitted:', formData)
-  }
+  const validateForm = () => {
+    const { name, email, password, confirmPassword } = formData;
+    
+    if (!isLogin && (!name || !name.trim())) {
+      setToast({ message: 'Name is required', type: 'error' });
+      return false;
+    }
+    if (!email || !email.match(/^\S+@\S+\.\S+$/)) {
+      setToast({ message: 'Invalid email address', type: 'error' });
+      return false;
+    }
+    if (!password || password.length < 8) {
+      setToast({ message: 'Password must be at least 8 characters', type: 'error' });
+      return false;
+    }
+    if (!isLogin) {
+      const hasUpperCase = /[A-Z]/.test(password);
+      const hasNumber = /[0-9]/.test(password);
+      const hasSymbol = /[!@#$%^&*()_+\-=[\]{};':"\\|,.<>/?]/.test(password);
+      
+      if (!hasUpperCase || !hasNumber || !hasSymbol) {
+        setToast({ message: 'Password needs an uppercase, number, and symbol', type: 'error' });
+        return false;
+      }
+      if (password !== confirmPassword) {
+        setToast({ message: 'Passwords do not match', type: 'error' });
+        return false;
+      }
+    }
+    return true;
+  };
+
+  const handleSubmit = async (e) => {
+    e.preventDefault();
+    if (!validateForm()) return;
+
+    try {
+      if (isLogin) {
+        await login(formData.email, formData.password);
+        setToast({ message: 'Welcome back! Login successful', type: 'success' });
+      } else {
+        await apiRegister(formData.name, formData.email, formData.password);
+        setToast({ message: 'Account created successfully!', type: 'success' });
+      }
+      setTimeout(() => navigate('/'), 1500);
+    } catch (error) {
+      setToast({ 
+        message: error.response?.data?.message || 'Authentication failed. Please try again.', 
+        type: 'error' 
+      });
+    }
+  };
 
   const toggleMode = () => {
     navigate(isLogin ? '/signup' : '/login')
@@ -69,7 +119,6 @@ function Auth() {
                 name="name"
                 value={formData.name}
                 onChange={handleInputChange}
-                required={!isLogin}
                 placeholder="Enter your full name"
               />
             </div>
@@ -83,7 +132,6 @@ function Auth() {
               name="email"
               value={formData.email}
               onChange={handleInputChange}
-              required
               placeholder="Enter your email"
             />
           </div>
@@ -96,7 +144,6 @@ function Auth() {
               name="password"
               value={formData.password}
               onChange={handleInputChange}
-              required
               placeholder="Enter your password"
             />
           </div>
@@ -111,7 +158,6 @@ function Auth() {
                   name="confirmPassword"
                   value={formData.confirmPassword}
                   onChange={handleInputChange}
-                  required={!isLogin}
                   placeholder="Confirm your password"
                 />
               </div>
