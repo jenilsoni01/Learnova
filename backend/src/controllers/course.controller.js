@@ -16,6 +16,30 @@ const toPublicFileUrl = (req, absoluteFilePath) => {
   return `${req.protocol}://${req.get('host')}${publicPath}`;
 };
 
+const buildCourseStatsMap = async (courseIds) => {
+  if (!Array.isArray(courseIds) || courseIds.length === 0) {
+    return new Map();
+  }
+
+  const rows = await Lesson.aggregate([
+    { $match: { course: { $in: courseIds } } },
+    {
+      $group: {
+        _id: '$course',
+        lessonsCount: { $sum: 1 },
+        totalDurationMins: { $sum: { $ifNull: ['$durationMins', 0] } },
+      },
+    },
+  ]);
+
+  return new Map(
+    rows.map((row) => [String(row._id), {
+      lessonsCount: row.lessonsCount || 0,
+      totalDurationMins: row.totalDurationMins || 0,
+    }])
+  );
+};
+
 const resolveAuthUserFromHeader = async (req) => {
   const authHeader = req.headers.authorization;
   if (!authHeader?.startsWith('Bearer ')) return null;
@@ -58,25 +82,27 @@ export const getPublicCourses = async (req, res) => {
       Course.countDocuments(filter)
     ]);
 
-    const result = await Promise.all(
-      courses.map(async (course) => {
-        const lessonsCount =
-          typeof course.lessonsCount === 'number'
-            ? course.lessonsCount
-            : await Lesson.countDocuments({ course: course._id });
+    const statsMap = await buildCourseStatsMap(courses.map((course) => course._id));
 
-        return {
-          _id: course._id,
-          title: course.title,
-          coverImage: course.coverImage,
-          description: course.description,
-          tags: course.tags || [],
-          accessRule: course.accessRule,
-          price: course.price,
-          lessonsCount,
-        };
-      })
-    );
+    const result = courses.map((course) => {
+      const stats = statsMap.get(String(course._id));
+      const lessonsCount =
+        typeof course.lessonsCount === 'number'
+          ? course.lessonsCount
+          : stats?.lessonsCount || 0;
+
+      return {
+        _id: course._id,
+        title: course.title,
+        coverImage: course.coverImage,
+        description: course.description,
+        tags: course.tags || [],
+        accessRule: course.accessRule,
+        price: course.price,
+        lessonsCount,
+        totalDurationMins: stats?.totalDurationMins || 0,
+      };
+    });
 
     const totalPages  = Math.ceil(totalItems / limit);
     const hasNextPage = page < totalPages;
@@ -123,8 +149,15 @@ export const getAdminCourses = async (req, res) => {
     const totalPages  = Math.ceil(totalItems / limit);
     const hasNextPage = page < totalPages;
 
+    const statsMap = await buildCourseStatsMap(courses.map((course) => course._id));
+
+    const coursesWithDuration = courses.map((course) => ({
+      ...course,
+      totalDurationMins: statsMap.get(String(course._id))?.totalDurationMins || 0,
+    }));
+
     return res.json({
-      data: courses,
+      data: coursesWithDuration,
       pagination: {
         currentPage: page,
         totalPages,
@@ -176,7 +209,22 @@ export const getCourseById = async (req, res) => {
       return res.status(404).json({ message: 'Course not found' });
     }
 
-    return res.json(course);
+    const [stats] = await Lesson.aggregate([
+      { $match: { course: course._id } },
+      {
+        $group: {
+          _id: '$course',
+          lessonsCount: { $sum: 1 },
+          totalDurationMins: { $sum: { $ifNull: ['$durationMins', 0] } },
+        },
+      },
+    ]);
+
+    return res.json({
+      ...course,
+      lessonsCount: stats?.lessonsCount ?? (typeof course.lessonsCount === 'number' ? course.lessonsCount : 0),
+      totalDurationMins: stats?.totalDurationMins || 0,
+    });
   } catch (error) {
     return res.status(500).json({ message: error.message });
   }

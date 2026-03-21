@@ -179,6 +179,7 @@ const InstructorDashboard = () => {
                   <th>Course</th>
                   <th>Status</th>
                   <th>Lessons</th>
+                  <th>Duration</th>
                   <th>Actions</th>
                 </tr>
               </thead>
@@ -197,6 +198,7 @@ const InstructorDashboard = () => {
                       </span>
                     </td>
                     <td>{course.lessonsCount ?? 0}</td>
+                    <td>{course.totalDurationMins ?? 0} min</td>
                     <td>
                       <div className="table-actions">
                         <button
@@ -242,6 +244,10 @@ const InstructorDashboard = () => {
                     <div className="stat">
                       <span className="value">{course.lessonsCount ?? 0}</span>
                       <span className="label">Lessons</span>
+                    </div>
+                    <div className="stat">
+                      <span className="value">{course.totalDurationMins ?? 0}</span>
+                      <span className="label">Minutes</span>
                     </div>
                   </div>
                   <div className="card-actions">

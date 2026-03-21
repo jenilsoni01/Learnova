@@ -183,6 +183,7 @@ const CourseDetail = () => {
             <p className="course-desc">{course.description}</p>
             <div className="course-hero-meta">
               <span>📚 {lessons.length || course.lessonsCount || 0} Lessons</span>
+              <span>⏱️ {course.totalDurationMins || 0} min</span>
               {avgRating && <span>⭐ {avgRating} ({reviews.length} reviews)</span>}
               {instructor && <span>👤 {instructor.name}</span>}
               <span>👁️ {course.viewsCount || 0} views</span>

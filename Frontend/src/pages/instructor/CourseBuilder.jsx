@@ -106,7 +106,13 @@ const CourseBuilder = () => {
     try {
       setSaving(true);
       const uploaded = await uploadLessonAsset(file);
-      setLessonForm(p => ({ ...p, [targetField]: uploaded.url }));
+      setLessonForm(p => ({
+        ...p,
+        [targetField]: uploaded.url,
+        ...(targetField === 'videoUrl' && Number.isFinite(uploaded.durationMins)
+          ? { durationMins: uploaded.durationMins }
+          : {})
+      }));
       setToast({ message: 'Lesson file uploaded', type: 'success' });
     } catch (err) {
       const status = err?.response?.status;
