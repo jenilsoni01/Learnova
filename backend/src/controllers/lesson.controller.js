@@ -5,6 +5,20 @@
 
 import Lesson from '../models/Lesson.js';
 import Attachment from '../models/Attachment.js';
+import path from 'path';
+
+const toPublicFileUrl = (req, absoluteFilePath) => {
+  const publicRoot = path.resolve('public');
+  const relativeFilePath = path.relative(publicRoot, absoluteFilePath);
+  const publicPath = `/${relativeFilePath.replace(/\\/g, '/')}`;
+  return `${req.protocol}://${req.get('host')}${publicPath}`;
+};
+
+const inferKind = (mimeType = '') => {
+  if (mimeType.startsWith('video/')) return 'video';
+  if (mimeType.startsWith('image/')) return 'image';
+  return 'document';
+};
 
 export const getLessons = async (req, res) => {
   try {
@@ -91,6 +105,25 @@ export const deleteLesson = async (req, res) => {
     await Attachment.deleteMany({ lesson: req.params.id });
 
     return res.json({ message: 'Lesson deleted' });
+  } catch (error) {
+    return res.status(500).json({ message: error.message });
+  }
+};
+
+export const uploadLessonAsset = async (req, res) => {
+  try {
+    if (!req.file?.path) {
+      return res.status(400).json({ message: 'File is required' });
+    }
+
+    return res.status(201).json({
+      url: toPublicFileUrl(req, req.file.path),
+      fileName: req.file.filename,
+      originalName: req.file.originalname,
+      mimeType: req.file.mimetype,
+      size: req.file.size,
+      kind: inferKind(req.file.mimetype),
+    });
   } catch (error) {
     return res.status(500).json({ message: error.message });
   }

@@ -1,6 +1,7 @@
 import { createContext, useState, useContext, useEffect } from 'react';
 import api from '../api/axios';
 
+
 const AuthContext = createContext();
 
 export const AuthProvider = ({ children }) => {
@@ -31,11 +32,12 @@ export const AuthProvider = ({ children }) => {
   const register = async (formData) => {
     const response = await api.post('/auth/register', formData);
     setUser(response.data.data.user); 
-    return response.data;
+    return response.data
   };
 
   const logout = async () => {
-    await api.post('/auth/logout');
+    const response = await api.post('/auth/logout');
+    
     setUser(null);
   };
 

@@ -5,12 +5,12 @@
 
 import jwt from 'jsonwebtoken';
 import fs from 'fs';
+import path from 'path';
 import User from '../models/User.js';
 import Course from '../models/Course.js';
 import Lesson from '../models/Lesson.js';
 import Enrollment from '../models/Enrollment.js';
 import LessonProgress from '../models/LessonProgress.js';
-import { uploadOnCloudinary } from '../utils/cloudinary.js';
 import { asyncHandler } from '../utils/asyncHandler.js';
 import { ApiError } from '../utils/ApiError.js';
 import { ApiResponse } from '../utils/ApiResponse.js';
@@ -65,16 +65,10 @@ const register = asyncHandler(async (req, res) => {
 
   // Handle File Upload
   if (req.file) {
-    const cloudinaryResponse = await uploadOnCloudinary(req.file.path);
-
-    if (!cloudinaryResponse) {
-      // uploadOnCloudinary already deletes the file on failure, so we don't need to do it here
-      throw new ApiError(500, 'Avatar upload failed');
-    }
-
-    // Successful upload - cleanup is safe even if utility already removed the file.
-    cleanupTempFile(req.file.path);
-    avatar = cloudinaryResponse.secure_url || cloudinaryResponse.url || '';
+    const publicRoot = path.resolve('public');
+    const relativeFilePath = path.relative(publicRoot, req.file.path);
+    const publicPath = `/${relativeFilePath.replace(/\\/g, '/')}`;
+    avatar = `${req.protocol}://${req.get('host')}${publicPath}`;
   }
 
   // Create User

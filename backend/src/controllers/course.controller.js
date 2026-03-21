@@ -4,9 +4,17 @@
 // ⚠️ WARNING: This file was modified. Review changes carefully before merging.
 
 import jwt from 'jsonwebtoken';
+import path from 'path';
 import Course from '../models/Course.js';
 import Lesson from '../models/Lesson.js';
 import User from '../models/User.js';
+
+const toPublicFileUrl = (req, absoluteFilePath) => {
+  const publicRoot = path.resolve('public');
+  const relativeFilePath = path.relative(publicRoot, absoluteFilePath);
+  const publicPath = `/${relativeFilePath.replace(/\\/g, '/')}`;
+  return `${req.protocol}://${req.get('host')}${publicPath}`;
+};
 
 const resolveAuthUserFromHeader = async (req) => {
   const authHeader = req.headers.authorization;
@@ -135,6 +143,23 @@ export const createCourse = async (req, res) => {
   try {
     const course = await Course.create({ ...req.body, createdBy: req.user._id });
     return res.status(201).json(course);
+  } catch (error) {
+    return res.status(500).json({ message: error.message });
+  }
+};
+
+export const uploadCourseCover = async (req, res) => {
+  try {
+    if (!req.file?.path) {
+      return res.status(400).json({ message: 'Cover image file is required' });
+    }
+
+    return res.status(201).json({
+      url: toPublicFileUrl(req, req.file.path),
+      fileName: req.file.filename,
+      mimeType: req.file.mimetype,
+      size: req.file.size,
+    });
   } catch (error) {
     return res.status(500).json({ message: error.message });
   }

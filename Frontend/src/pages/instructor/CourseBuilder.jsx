@@ -5,7 +5,17 @@ import Navbar from '../../components/common/Navbar';
 import Toast from '../../components/common/Toast';
 import './CourseBuilder.css';
 
-const EMPTY_LESSON = { title: '', type: 'video', description: '', videoUrl: '', durationMins: 0 };
+const EMPTY_LESSON = {
+  title: '',
+  type: 'video',
+  description: '',
+  videoUrl: '',
+  fileUrl: '',
+  imageUrl: '',
+  allowDownload: false,
+  durationMins: 0,
+  attachments: []
+};
 const EMPTY_QUESTION = { text: '', options: [{ text: '', isCorrect: false }, { text: '', isCorrect: false }] };
 const EMPTY_QUIZ = { title: '', questions: [{ ...EMPTY_QUESTION }] };
 
@@ -60,6 +70,82 @@ const CourseBuilder = () => {
     load();
   }, [editId, isEdit]);
 
+  const uploadCourseCover = async (file) => {
+    const fd = new FormData();
+    fd.append('coverImage', file);
+    const { data } = await api.post('/courses/upload/cover', fd);
+    return data.url;
+  };
+
+  const uploadLessonAsset = async (file) => {
+    const fd = new FormData();
+    fd.append('file', file);
+    const { data } = await api.post('/lessons/upload', fd);
+    return data;
+  };
+
+  const handleCoverFileChange = async (e) => {
+    const file = e.target.files?.[0];
+    if (!file) return;
+    try {
+      setSaving(true);
+      const url = await uploadCourseCover(file);
+      setCourseData(p => ({ ...p, coverImage: url }));
+      setToast({ message: 'Cover image uploaded', type: 'success' });
+    } catch (err) {
+      setToast({ message: err.response?.data?.message || 'Failed to upload cover image', type: 'error' });
+    } finally {
+      setSaving(false);
+      e.target.value = '';
+    }
+  };
+
+  const handleLessonFileUpload = async (e, targetField) => {
+    const file = e.target.files?.[0];
+    if (!file) return;
+    try {
+      setSaving(true);
+      const uploaded = await uploadLessonAsset(file);
+      setLessonForm(p => ({ ...p, [targetField]: uploaded.url }));
+      setToast({ message: 'Lesson file uploaded', type: 'success' });
+    } catch (err) {
+      const status = err?.response?.status;
+      const message = err?.response?.data?.message || err?.message || 'Failed to upload lesson file';
+      setToast({ message: status ? `Upload failed (${status}): ${message}` : message, type: 'error' });
+    } finally {
+      setSaving(false);
+      e.target.value = '';
+    }
+  };
+
+  const handleAttachmentUpload = async (e) => {
+    const file = e.target.files?.[0];
+    if (!file) return;
+    try {
+      setSaving(true);
+      const uploaded = await uploadLessonAsset(file);
+      const newAttachment = {
+        type: 'file',
+        name: uploaded.originalName || uploaded.fileName,
+        url: uploaded.url
+      };
+      setLessonForm(p => ({ ...p, attachments: [...(p.attachments || []), newAttachment] }));
+      setToast({ message: 'Attachment uploaded', type: 'success' });
+    } catch (err) {
+      setToast({ message: err.response?.data?.message || 'Failed to upload attachment', type: 'error' });
+    } finally {
+      setSaving(false);
+      e.target.value = '';
+    }
+  };
+
+  const removeAttachment = (index) => {
+    setLessonForm(p => ({
+      ...p,
+      attachments: (p.attachments || []).filter((_, i) => i !== index)
+    }));
+  };
+
   // Step 1: Save/update course
   const handleSaveCourse = async () => {
     if (!courseData.title.trim()) {
@@ -97,14 +183,19 @@ const CourseBuilder = () => {
     }
     try {
       setSaving(true);
-      const payload = { ...lessonForm, order: lessons.length + 1, durationMins: Number(lessonForm.durationMins) || 0 };
+      const payload = {
+        ...lessonForm,
+        order: editLessonId ? lessonForm.order || 1 : lessons.length + 1,
+        durationMins: Number(lessonForm.durationMins) || 0,
+        attachments: Array.isArray(lessonForm.attachments) ? lessonForm.attachments : []
+      };
       if (editLessonId) {
         const res = await api.put(`/lessons/${editLessonId}`, payload);
-        setLessons(prev => prev.map(l => l._id === editLessonId ? res.data : l));
+        setLessons(prev => prev.map(l => l._id === editLessonId ? { ...l, ...res.data, attachments: payload.attachments } : l));
         setToast({ message: 'Lesson updated', type: 'success' });
       } else {
         const res = await api.post(`/lessons/course/${courseId}`, payload);
-        setLessons(prev => [...prev, res.data]);
+        setLessons(prev => [...prev, { ...res.data, attachments: payload.attachments }]);
         setToast({ message: 'Lesson added', type: 'success' });
       }
       setLessonForm({ ...EMPTY_LESSON });
@@ -131,7 +222,11 @@ const CourseBuilder = () => {
     setLessonForm({
       title: lesson.title || '', type: lesson.type || 'video',
       description: lesson.description || '', videoUrl: lesson.videoUrl || '',
-      durationMins: lesson.durationMins || 0
+      fileUrl: lesson.fileUrl || '', imageUrl: lesson.imageUrl || '',
+      allowDownload: Boolean(lesson.allowDownload),
+      durationMins: lesson.durationMins || 0,
+      order: lesson.order || 1,
+      attachments: Array.isArray(lesson.attachments) ? lesson.attachments : []
     });
     setEditLessonId(lesson._id);
     setShowLessonForm(true);
@@ -264,6 +359,20 @@ const CourseBuilder = () => {
                 <label>Cover Image URL</label>
                 <input className="form-input" placeholder="https://..." value={courseData.coverImage}
                   onChange={e => setCourseData(p => ({ ...p, coverImage: e.target.value }))} />
+                <input
+                  className="form-input"
+                  type="file"
+                  accept="image/*"
+                  onChange={handleCoverFileChange}
+                  style={{ marginTop: '0.5rem' }}
+                />
+                {courseData.coverImage && (
+                  <img
+                    src={courseData.coverImage}
+                    alt="Course cover preview"
+                    style={{ marginTop: '0.5rem', maxWidth: '220px', borderRadius: '8px', border: '1px solid rgba(255,255,255,0.15)' }}
+                  />
+                )}
               </div>
               <div className="form-group">
                 <label>Tags (comma separated)</label>
@@ -364,14 +473,96 @@ const CourseBuilder = () => {
                   </div>
                 </div>
                 <div className="form-group">
-                  <label>Video URL</label>
-                  <input className="form-input" placeholder="YouTube or Vimeo URL" value={lessonForm.videoUrl}
-                    onChange={e => setLessonForm(p => ({ ...p, videoUrl: e.target.value }))} />
+                  <label>Lesson Asset</label>
+                  {lessonForm.type === 'video' && (
+                    <>
+                      <input className="form-input" placeholder="YouTube, Vimeo or direct video URL" value={lessonForm.videoUrl}
+                        onChange={e => setLessonForm(p => ({ ...p, videoUrl: e.target.value }))} />
+                      <input
+                        className="form-input"
+                        type="file"
+                        accept="video/*"
+                        onChange={(e) => handleLessonFileUpload(e, 'videoUrl')}
+                        style={{ marginTop: '0.5rem' }}
+                      />
+                      {lessonForm.videoUrl && (
+                        <a href={lessonForm.videoUrl} target="_blank" rel="noreferrer" style={{ display: 'inline-block', marginTop: '0.4rem' }}>
+                          Preview uploaded video
+                        </a>
+                      )}
+                    </>
+                  )}
+                  {lessonForm.type === 'document' && (
+                    <>
+                      <input className="form-input" placeholder="Document URL" value={lessonForm.fileUrl}
+                        onChange={e => setLessonForm(p => ({ ...p, fileUrl: e.target.value }))} />
+                      <input
+                        className="form-input"
+                        type="file"
+                        accept=".pdf,.doc,.docx,.ppt,.pptx,.xls,.xlsx,.txt,.zip"
+                        onChange={(e) => handleLessonFileUpload(e, 'fileUrl')}
+                        style={{ marginTop: '0.5rem' }}
+                      />
+                      <label style={{ display: 'flex', alignItems: 'center', gap: '0.4rem', marginTop: '0.5rem', fontSize: '0.85rem' }}>
+                        <input
+                          type="checkbox"
+                          checked={lessonForm.allowDownload}
+                          onChange={(e) => setLessonForm(p => ({ ...p, allowDownload: e.target.checked }))}
+                        />
+                        Allow document download
+                      </label>
+                      {lessonForm.fileUrl && (
+                        <a href={lessonForm.fileUrl} target="_blank" rel="noreferrer" style={{ display: 'inline-block', marginTop: '0.4rem' }}>
+                          Preview document
+                        </a>
+                      )}
+                    </>
+                  )}
+                  {lessonForm.type === 'image' && (
+                    <>
+                      <input className="form-input" placeholder="Image URL" value={lessonForm.imageUrl}
+                        onChange={e => setLessonForm(p => ({ ...p, imageUrl: e.target.value }))} />
+                      <input
+                        className="form-input"
+                        type="file"
+                        accept="image/*"
+                        onChange={(e) => handleLessonFileUpload(e, 'imageUrl')}
+                        style={{ marginTop: '0.5rem' }}
+                      />
+                      {lessonForm.imageUrl && (
+                        <img
+                          src={lessonForm.imageUrl}
+                          alt="Lesson preview"
+                          style={{ display: 'block', marginTop: '0.5rem', maxWidth: '260px', borderRadius: '8px', border: '1px solid rgba(255,255,255,0.15)' }}
+                        />
+                      )}
+                    </>
+                  )}
                 </div>
                 <div className="form-group">
                   <label>Description</label>
                   <textarea className="form-input" rows={2} placeholder="Lesson description" value={lessonForm.description}
                     onChange={e => setLessonForm(p => ({ ...p, description: e.target.value }))} />
+                </div>
+                <div className="form-group">
+                  <label>Attachments (optional)</label>
+                  <input
+                    className="form-input"
+                    type="file"
+                    onChange={handleAttachmentUpload}
+                  />
+                  {(lessonForm.attachments || []).length > 0 && (
+                    <div style={{ display: 'flex', flexDirection: 'column', gap: '0.35rem', marginTop: '0.6rem' }}>
+                      {lessonForm.attachments.map((att, index) => (
+                        <div key={`${att.url}-${index}`} style={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between', gap: '0.6rem', fontSize: '0.82rem' }}>
+                          <a href={att.url} target="_blank" rel="noreferrer" style={{ overflow: 'hidden', textOverflow: 'ellipsis', whiteSpace: 'nowrap' }}>
+                            {att.name || `Attachment ${index + 1}`}
+                          </a>
+                          <button type="button" className="btn btn-danger btn-sm" onClick={() => removeAttachment(index)}>Remove</button>
+                        </div>
+                      ))}
+                    </div>
+                  )}
                 </div>
                 <div className="add-form-actions">
                   <button className="btn btn-secondary btn-sm" onClick={() => { setShowLessonForm(false); setEditLessonId(null); }}>Cancel</button>

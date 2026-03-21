@@ -4,10 +4,11 @@
 // Note: Added course access check for paid courses.
 
 import { Router } from 'express';
-import { getLessons, createLesson, updateLesson, deleteLesson } from '../controllers/lesson.controller.js';
+import { getLessons, createLesson, updateLesson, deleteLesson, uploadLessonAsset } from '../controllers/lesson.controller.js';
 import { protect } from '../middleware/auth.middleware.js';
 import { authorize } from '../middleware/role.middleware.js';
 import { checkCourseAccess } from '../middleware/courseAccess.middleware.js';
+import { upload } from '../middleware/multer.middleware.js';
 
 const router = Router();
 
@@ -15,6 +16,7 @@ const router = Router();
 router.get('/course/:courseId', protect, checkCourseAccess, getLessons);
 
 // Admin/Instructor lesson management
+router.post('/upload', protect, authorize('admin', 'instructor'), upload.single('file'), uploadLessonAsset);
 router.post('/course/:courseId', protect, authorize('admin', 'instructor'), createLesson);
 router.put('/:id', protect, authorize('admin', 'instructor'), updateLesson);
 router.delete('/:id', protect, authorize('admin', 'instructor'), deleteLesson);
