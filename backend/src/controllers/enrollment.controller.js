@@ -31,9 +31,29 @@ const courseRequiresPayment = (course) =>
 // ---------------------------------------------------------------------------
 export const getMyEnrollments = async (req, res) => {
   try {
-    const enrollments = await Enrollment.find({ learner: req.user._id })
-      .populate('course', 'title coverImage description tags accessRule price')
-      .sort('-enrolledAt');
+    const page  = parseInt(req.query.page)  || 1;
+    const limit = parseInt(req.query.limit) || 10;
+    const skip  = (page - 1) * limit;
+    const { search } = req.query;
+
+    const filter = { learner: req.user._id };
+
+    // If search is provided, find matching course IDs first
+    if (search?.trim()) {
+      const matchingCourses = await Course.find({
+        title: { $regex: search.trim(), $options: 'i' }
+      }).select('_id').lean();
+      filter.course = { $in: matchingCourses.map(c => c._id) };
+    }
+
+    const [enrollments, totalItems] = await Promise.all([
+      Enrollment.find(filter)
+        .populate('course', 'title coverImage description tags accessRule price')
+        .sort('-enrolledAt')
+        .skip(skip)
+        .limit(limit),
+      Enrollment.countDocuments(filter)
+    ]);
 
     const result = await Promise.all(
       enrollments.map(async (enrollment) => {
@@ -50,7 +70,20 @@ export const getMyEnrollments = async (req, res) => {
       })
     );
 
-    return res.json(result);
+    const totalPages  = Math.ceil(totalItems / limit);
+    const hasNextPage = page < totalPages;
+
+    return res.json({
+      data: result,
+      pagination: {
+        currentPage: page,
+        totalPages,
+        totalItems,
+        hasNextPage,
+        hasPrevPage: page > 1,
+        limit
+      }
+    });
   } catch (error) {
     return res.status(500).json({ message: error.message });
   }

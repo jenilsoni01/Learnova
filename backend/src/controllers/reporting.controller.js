@@ -75,9 +75,17 @@ export const getReportingDashboard = async (req, res) => {
 // Get reporting data for all courses (admin) or own courses (instructor)
 export const getAllReporting = async (req, res) => {
   try {
+    const page  = parseInt(req.query.page)  || 1;
+    const limit = parseInt(req.query.limit) || 10;
+    const skip  = (page - 1) * limit;
+
     // Get courses based on role
     const courseFilter = req.user.role === 'admin' ? {} : { createdBy: req.user._id };
-    const courses = await Course.find(courseFilter);
+    const totalItems = await Course.countDocuments(courseFilter);
+    const courses = await Course.find(courseFilter)
+      .sort({ createdAt: -1 })
+      .skip(skip)
+      .limit(limit);
 
     const reportingData = await Promise.all(
       courses.map(async (course) => {
@@ -101,7 +109,34 @@ export const getAllReporting = async (req, res) => {
       })
     );
 
-    res.json(reportingData);
+    // Overview stats across ALL courses (not just current page)
+    const allCourses = await Course.find(courseFilter).select('_id').lean();
+    const allCourseIds = allCourses.map(c => c._id);
+    const allEnrollments = await Enrollment.find({ course: { $in: allCourseIds } });
+
+    const overview = {
+      totalCourses: allCourses.length,
+      totalEnrolled: allEnrollments.length,
+      completed: allEnrollments.filter(e => e.status === 'completed').length,
+      inProgress: allEnrollments.filter(e => e.status === 'in_progress').length,
+      yetToStart: allEnrollments.filter(e => e.status === 'yet_to_start').length,
+    };
+
+    const totalPages  = Math.ceil(totalItems / limit);
+    const hasNextPage = page < totalPages;
+
+    res.json({
+      data: reportingData,
+      overview,
+      pagination: {
+        currentPage: page,
+        totalPages,
+        totalItems,
+        hasNextPage,
+        hasPrevPage: page > 1,
+        limit
+      }
+    });
   } catch (err) {
     res.status(500).json({ message: err.message });
   }

@@ -1,30 +1,28 @@
-import { useState, useEffect } from 'react';
+import { useState, useCallback } from 'react';
 import { useNavigate } from 'react-router-dom';
 import api from '../../api/axios';
 import { useAuth } from '../../context/AuthContext';
 import Navbar from '../../components/common/Navbar';
+import useInfiniteScroll from '../../hooks/useInfiniteScroll';
+import LoadingSpinner from '../../components/common/LoadingSpinner';
+import EndMessage from '../../components/common/EndMessage';
 import './MyLearning.css';
 
 const MyLearning = () => {
   const { user } = useAuth();
   const navigate = useNavigate();
-  const [enrollments, setEnrollments] = useState([]);
-  const [loading, setLoading] = useState(true);
 
-  useEffect(() => {
-    const fetchEnrollments = async () => {
-      try {
-        setLoading(true);
-        const res = await api.get('/enrollments/me');
-        setEnrollments(Array.isArray(res.data) ? res.data : []);
-      } catch (err) {
-        console.error('Failed to fetch enrollments:', err);
-      } finally {
-        setLoading(false);
-      }
-    };
-    fetchEnrollments();
+  const fetchEnrollments = useCallback(async (page) => {
+    const params = { page, limit: 10 };
+    const { data } = await api.get('/enrollments/me', { params });
+    return data; // { data: [...], pagination: {...} }
   }, []);
+
+  const { items: enrollments, isLoading, hasMore, sentinelRef } =
+    useInfiniteScroll(fetchEnrollments, []);
+
+  // Show spinner only on very first load
+  const showInitialLoading = isLoading && enrollments.length === 0;
 
   return (
     <div className="my-learning">
@@ -36,9 +34,9 @@ const MyLearning = () => {
           <p>Track your progress and continue where you left off.</p>
         </div>
 
-        {loading ? (
+        {showInitialLoading ? (
           <div className="loading-container"><div className="spinner" /></div>
-        ) : enrollments.length === 0 ? (
+        ) : enrollments.length === 0 && !isLoading ? (
           <div className="empty-state">
             <div className="empty-icon">📚</div>
             <h3>You haven't enrolled in any courses yet</h3>
@@ -109,6 +107,11 @@ const MyLearning = () => {
             })}
           </div>
         )}
+
+        {/* Sentinel + infinite scroll states */}
+        <div ref={sentinelRef} style={{ height: '1rem' }} />
+        {isLoading && enrollments.length > 0 && <LoadingSpinner />}
+        {!hasMore && enrollments.length > 0 && <EndMessage message="All courses loaded" />}
       </div>
     </div>
   );

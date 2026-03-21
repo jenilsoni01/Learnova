@@ -1,9 +1,13 @@
-import { useState, useEffect } from 'react';
+import { useState, useEffect, useCallback } from 'react';
 import api from '../../api/axios';
 import { useAuth } from '../../context/AuthContext';
 import Navbar from '../../components/common/Navbar';
 import CourseCard from '../../components/common/CourseCard';
 import { SkeletonCard } from '../../components/common/Skeleton';
+import useInfiniteScroll from '../../hooks/useInfiniteScroll';
+import LoadingSpinner from '../../components/common/LoadingSpinner';
+import EndMessage from '../../components/common/EndMessage';
+import ErrorRetry from '../../components/common/ErrorRetry';
 import './CoursesDashboard.css';
 
 const BADGES = [
@@ -15,16 +19,19 @@ const BADGES = [
   { name: 'Master', points: 120 }
 ];
 
-
-
 const CoursesDashboard = () => {
   const { user } = useAuth();
-  const [courses, setCourses] = useState([]);
   const [search, setSearch] = useState('');
+  const [debouncedSearch, setDebouncedSearch] = useState('');
   const [categoryFilter, setCategoryFilter] = useState('');
-  const [viewMode, setViewMode] = useState('grid'); // 'grid' or 'list'
+  const [viewMode, setViewMode] = useState('grid');
   const [isProfileOpen, setIsProfileOpen] = useState(false);
-  const [loading, setLoading] = useState(true);
+
+  // Debounce search by 400ms
+  useEffect(() => {
+    const timer = setTimeout(() => setDebouncedSearch(search), 400);
+    return () => clearTimeout(timer);
+  }, [search]);
 
   const getBadge = (points) => {
     const eligibleBadges = BADGES.filter(b => points >= b.points);
@@ -33,39 +40,32 @@ const CoursesDashboard = () => {
       : BADGES[0].name;
   };
 
-  useEffect(() => {
-    const fetchCourses = async () => {
-      try {
-        setLoading(true);
-        const params = {};
-        if (search.trim()) params.search = search.trim();
-        const res = await api.get('/courses/public', { params });
-        setCourses(Array.isArray(res.data) ? res.data : []);
-      } catch (err) {
-        console.error('Failed to fetch courses:', err);
-        setCourses([]);
-      } finally {
-        setLoading(false);
-      }
-    };
+  const fetchCourses = useCallback(async (page) => {
+    const params = { page, limit: 10 };
+    if (debouncedSearch.trim()) params.search = debouncedSearch.trim();
+    const { data } = await api.get('/courses/public', { params });
+    return data; // { data: [...], pagination: {...} }
+  }, [debouncedSearch]);
 
-    const debounce = setTimeout(fetchCourses, 300);
-    return () => clearTimeout(debounce);
-  }, [search]);
+  const { items: courses, isLoading, hasMore, error, sentinelRef, loadMore } =
+    useInfiniteScroll(fetchCourses, [debouncedSearch]);
 
   const userPoints = user?.totalPoints || 0;
   const radius = 42;
   const circumference = 2 * Math.PI * radius;
   const strokeOffset = circumference - (Math.min(userPoints, 120) / 120) * circumference;
 
-  // Extract unique tags for filtering
+  // Extract unique tags for filtering (from loaded items)
   const allTags = Array.from(new Set(courses.flatMap(c => c.tags || []))).sort();
 
-  // Apply frontend filters
+  // Apply client-side category filter
   const filteredCourses = courses.filter(course => {
     if (categoryFilter && !course.tags?.includes(categoryFilter)) return false;
     return true;
   });
+
+  // Show skeleton only on very first load (page 1 with no items yet)
+  const showSkeleton = isLoading && courses.length === 0;
 
   return (
     <div className="dashboard">
@@ -121,11 +121,11 @@ const CoursesDashboard = () => {
 
       <div className="container dashboard-layout">
         <div className="main-content">
-          {loading ? (
+          {showSkeleton ? (
             <div className={`courses-${viewMode}`}>
               {[1, 2, 3, 4].map(i => <SkeletonCard key={i} />)}
             </div>
-          ) : filteredCourses.length === 0 ? (
+          ) : filteredCourses.length === 0 && !isLoading ? (
             <div className="empty-state">
               <div className="empty-icon">📚</div>
               <h3>No courses found</h3>
@@ -140,6 +140,12 @@ const CoursesDashboard = () => {
               ))}
             </div>
           )}
+
+          {/* Sentinel + infinite scroll states */}
+          <div ref={sentinelRef} style={{ height: '1rem' }} />
+          {isLoading && courses.length > 0 && <LoadingSpinner />}
+          {!hasMore && courses.length > 0 && <EndMessage />}
+          {error && <ErrorRetry onRetry={() => loadMore(1)} />}
         </div>
 
         {/* Mobile toggle */}

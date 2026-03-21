@@ -25,6 +25,9 @@ const resolveAuthUserFromHeader = async (req) => {
 export const getPublicCourses = async (req, res) => {
   try {
     const { search } = req.query;
+    const page  = parseInt(req.query.page)  || 1;
+    const limit = parseInt(req.query.limit) || 10;
+    const skip  = (page - 1) * limit;
     const authUser = req.user;
 
     const filter = { isPublished: true };
@@ -36,11 +39,16 @@ export const getPublicCourses = async (req, res) => {
       filter.title = { $regex: search.trim(), $options: 'i' };
     }
 
-    const courses = await Course.find(filter)
-      .select('title coverImage description tags accessRule price visibility')
-      .populate({ path: 'lessonsCount' })
-      .sort({ createdAt: -1 })
-      .lean();
+    const [courses, totalItems] = await Promise.all([
+      Course.find(filter)
+        .select('title coverImage description tags accessRule price visibility')
+        .populate({ path: 'lessonsCount' })
+        .sort({ createdAt: -1 })
+        .skip(skip)
+        .limit(limit)
+        .lean(),
+      Course.countDocuments(filter)
+    ]);
 
     const result = await Promise.all(
       courses.map(async (course) => {
@@ -62,7 +70,20 @@ export const getPublicCourses = async (req, res) => {
       })
     );
 
-    return res.json(result);
+    const totalPages  = Math.ceil(totalItems / limit);
+    const hasNextPage = page < totalPages;
+
+    return res.json({
+      data: result,
+      pagination: {
+        currentPage: page,
+        totalPages,
+        totalItems,
+        hasNextPage,
+        hasPrevPage: page > 1,
+        limit
+      }
+    });
   } catch (error) {
     return res.status(500).json({ message: error.message });
   }
@@ -70,14 +91,41 @@ export const getPublicCourses = async (req, res) => {
 
 export const getAdminCourses = async (req, res) => {
   try {
-    const filter = req.user.role === 'admin' ? {} : { createdBy: req.user._id };
-    const courses = await Course.find(filter)
-      .populate('responsible createdBy', 'name avatar')
-      .populate({ path: 'lessonsCount' })
-      .sort({ createdAt: -1 })
-      .lean();
+    const page  = parseInt(req.query.page)  || 1;
+    const limit = parseInt(req.query.limit) || 10;
+    const skip  = (page - 1) * limit;
+    const { search } = req.query;
 
-    return res.json(courses);
+    const filter = req.user.role === 'admin' ? {} : { createdBy: req.user._id };
+    if (search?.trim()) {
+      filter.title = { $regex: search.trim(), $options: 'i' };
+    }
+
+    const [courses, totalItems] = await Promise.all([
+      Course.find(filter)
+        .populate('responsible createdBy', 'name avatar')
+        .populate({ path: 'lessonsCount' })
+        .sort({ createdAt: -1 })
+        .skip(skip)
+        .limit(limit)
+        .lean(),
+      Course.countDocuments(filter)
+    ]);
+
+    const totalPages  = Math.ceil(totalItems / limit);
+    const hasNextPage = page < totalPages;
+
+    return res.json({
+      data: courses,
+      pagination: {
+        currentPage: page,
+        totalPages,
+        totalItems,
+        hasNextPage,
+        hasPrevPage: page > 1,
+        limit
+      }
+    });
   } catch (error) {
     return res.status(500).json({ message: error.message });
   }
