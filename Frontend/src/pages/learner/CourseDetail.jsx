@@ -2,6 +2,7 @@ import { useState, useEffect } from 'react';
 import { useParams, useNavigate } from 'react-router-dom';
 import api from '../../api/axios';
 import { useAuth } from '../../context/AuthContext';
+import { useRazorpay } from '../../hooks/useRazorpay';
 import Navbar from '../../components/common/Navbar';
 import Toast from '../../components/common/Toast';
 import './CourseDetail.css';
@@ -10,6 +11,7 @@ const CourseDetail = () => {
   const { id } = useParams();
   const { user } = useAuth();
   const navigate = useNavigate();
+  const { initiatePayment, loading: paymentLoading } = useRazorpay();
   const [course, setCourse] = useState(null);
   const [lessons, setLessons] = useState([]);
   const [reviews, setReviews] = useState([]);
@@ -59,20 +61,55 @@ const CourseDetail = () => {
       navigate('/login');
       return;
     }
-    try {
+
+    // Check if course requires payment
+    const requiresPayment = course.accessRule === 'payment' && course.price > 0;
+
+    if (requiresPayment) {
+      // Use Razorpay payment flow
       setEnrolling(true);
-      await api.post(`/enrollments/${id}`);
-      setEnrolled(true);
-      setToast({ message: 'Successfully enrolled! 🎉', type: 'success' });
-      // Fetch lessons after enrolling
+      initiatePayment(
+        id,
+        course.title,
+        { name: user.name, email: user.email },
+        async (result) => {
+          // Success callback
+          setEnrolling(false);
+          if (result.enrolled) {
+            setEnrolled(true);
+            setToast({ message: result.message || 'Successfully enrolled!', type: 'success' });
+            // Fetch lessons after enrolling
+            try {
+              const lessonsRes = await api.get(`/lessons/course/${id}`);
+              setLessons(Array.isArray(lessonsRes.data) ? lessonsRes.data : []);
+            } catch {}
+          }
+        },
+        (errorMessage) => {
+          // Error callback
+          setEnrolling(false);
+          if (errorMessage !== 'Payment cancelled') {
+            setToast({ message: errorMessage, type: 'error' });
+          }
+        }
+      );
+    } else {
+      // Free course - direct enrollment
       try {
-        const lessonsRes = await api.get(`/lessons/course/${id}`);
-        setLessons(Array.isArray(lessonsRes.data) ? lessonsRes.data : []);
-      } catch {}
-    } catch (err) {
-      setToast({ message: err.response?.data?.message || 'Enrollment failed', type: 'error' });
-    } finally {
-      setEnrolling(false);
+        setEnrolling(true);
+        await api.post(`/enrollments/${id}`);
+        setEnrolled(true);
+        setToast({ message: 'Successfully enrolled!', type: 'success' });
+        // Fetch lessons after enrolling
+        try {
+          const lessonsRes = await api.get(`/lessons/course/${id}`);
+          setLessons(Array.isArray(lessonsRes.data) ? lessonsRes.data : []);
+        } catch {}
+      } catch (err) {
+        setToast({ message: err.response?.data?.message || 'Enrollment failed', type: 'error' });
+      } finally {
+        setEnrolling(false);
+      }
     }
   };
 
@@ -153,20 +190,21 @@ const CourseDetail = () => {
             <div className="course-hero-actions">
               {enrolled ? (
                 <button className="btn btn-primary btn-lg" onClick={() => navigate(`/learn/${id}`)}>
-                  ▶️ Continue Learning
+                  Continue Learning
                 </button>
               ) : (
                 <>
                   <button
                     className="btn btn-primary btn-lg"
                     onClick={handleEnroll}
-                    disabled={enrolling}
+                    disabled={enrolling || paymentLoading}
                   >
-                    {enrolling ? 'Enrolling...' : 'Enroll Now'}
+                    {enrolling || paymentLoading
+                      ? 'Processing...'
+                      : course.accessRule === 'payment' && course.price > 0
+                        ? `Buy Now - ${course.currency === 'INR' ? '₹' : course.currency}${course.price}`
+                        : 'Enroll Now - Free'}
                   </button>
-                  <span className={`price-display ${(!course.price || course.price === 0) ? 'free' : ''}`}>
-                    {!course.price || course.price === 0 ? 'Free' : `₹${course.price}`}
-                  </span>
                 </>
               )}
             </div>

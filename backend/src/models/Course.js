@@ -34,9 +34,15 @@ const courseSchema = new mongoose.Schema({
     enum: ['open', 'invitation', 'payment'], 
     default: 'open' 
   },
-  price: { 
-    type: Number, 
-    default: 0 
+  price: {
+    type: Number,
+    default: 0,
+    min: 0
+  },
+  currency: {
+    type: String,
+    default: 'INR',
+    uppercase: true
   },
   responsible: { 
     type: mongoose.Schema.Types.ObjectId, 
@@ -60,5 +66,19 @@ courseSchema.virtual('lessonsCount', {
   foreignField: 'course',
   count: true
 });
+
+// Virtual: Check if course requires payment
+courseSchema.virtual('isPaid').get(function() {
+  return this.accessRule === 'payment' && this.price > 0;
+});
+
+// Virtual: Check if course is free
+courseSchema.virtual('isFree').get(function() {
+  return this.accessRule === 'open' || this.price === 0;
+});
+
+// Ensure virtuals are included in JSON output
+courseSchema.set('toJSON', { virtuals: true });
+courseSchema.set('toObject', { virtuals: true });
 
 export default mongoose.model('Course', courseSchema);
