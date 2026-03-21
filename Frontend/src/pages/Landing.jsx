@@ -1,10 +1,35 @@
-import { useState } from 'react'
-import { useNavigate } from 'react-router-dom'
+import { useState, useRef, useEffect } from 'react'
+import { useNavigate, Link } from 'react-router-dom'
+import { useAuth } from '../context/AuthContext'
 import './Landing.css'
 
 function Landing() {
   const [isMenuOpen, setIsMenuOpen] = useState(false)
+  const [dropdownOpen, setDropdownOpen] = useState(false)
+  const dropdownRef = useRef(null)
   const navigate = useNavigate()
+  const { user, logout } = useAuth()
+
+  useEffect(() => {
+    const handleClickOutside = (e) => {
+      if (dropdownRef.current && !dropdownRef.current.contains(e.target)) {
+        setDropdownOpen(false)
+      }
+    }
+    document.addEventListener('mousedown', handleClickOutside)
+    return () => document.removeEventListener('mousedown', handleClickOutside)
+  }, [])
+
+  const handleLogout = async () => {
+    try {
+      await logout()
+      setDropdownOpen(false)
+      setIsMenuOpen(false)
+      navigate('/')
+    } catch (err) {
+      console.error('Logout failed', err)
+    }
+  }
 
   return (
     <div className="landing">
@@ -24,9 +49,59 @@ function Landing() {
               <li><a href="#contact" onClick={() => setIsMenuOpen(false)}>Contact</a></li>
             </ul>
           </nav>
-          <div className={`auth-buttons ${isMenuOpen ? 'open' : ''}`}>
-            <button className="btn btn-secondary" onClick={() => { navigate('/login'); setIsMenuOpen(false); }}>Login</button>
-            <button className="btn btn-primary" onClick={() => { navigate('/signup'); setIsMenuOpen(false); }}>Sign Up</button>
+          <div className={`auth-buttons ${isMenuOpen ? 'open' : ''}`} style={{ position: 'relative' }}>
+            {user ? (
+              <div ref={dropdownRef}>
+                <button 
+                  onClick={() => setDropdownOpen(!dropdownOpen)}
+                  style={{ background: 'transparent', border: 'none', cursor: 'pointer', display: 'flex', alignItems: 'center', gap: '0.5rem', color: 'var(--text-h)' }}
+                >
+                  <div style={{ width: '36px', height: '36px', borderRadius: '50%', background: 'linear-gradient(135deg, var(--primary), var(--accent))', display: 'flex', alignItems: 'center', justifyContent: 'center', fontWeight: 'bold', color: 'white', overflow: 'hidden' }}>
+                    {user.avatar ? (
+                      <img src={user.avatar} alt={user.name} style={{ width: '100%', height: '100%', objectFit: 'cover' }} />
+                    ) : (
+                      user.name?.charAt(0).toUpperCase()
+                    )}
+                  </div>
+                  <span style={{ fontWeight: 600 }}>{user.name?.split(' ')[0]}</span>
+                </button>
+                {dropdownOpen && (
+                  <div style={{ position: 'absolute', top: '100%', right: '0', background: 'var(--glass-bg)', border: '1px solid var(--glass-border)', borderRadius: '12px', padding: '0.5rem', minWidth: '200px', backdropFilter: 'var(--glass-blur)', zIndex: 100, marginTop: '0.5rem', boxShadow: '0 10px 30px rgba(0,0,0,0.5)', textAlign: 'left' }}>
+                    <div style={{ padding: '0.5rem 0.75rem', marginBottom: '0.25rem' }}>
+                      <div style={{ fontWeight: 600, color: 'var(--text-h)', fontSize: '0.9rem' }}>{user.name}</div>
+                      <div style={{ fontSize: '0.75rem', color: 'var(--text)' }}>{user.email}</div>
+                    </div>
+                    <div style={{ height: '1px', background: 'var(--glass-border)', margin: '0.25rem 0' }} />
+                    <Link to="/dashboard" onClick={() => setDropdownOpen(false)} style={{ display: 'block', padding: '0.5rem 0.75rem', color: 'var(--text)', textDecoration: 'none', borderRadius: '8px', fontSize: '0.85rem', transition: 'background 0.2s' }}>
+                      🎓 Course Marketplace
+                    </Link>
+                    <Link to="/my-learning" onClick={() => setDropdownOpen(false)} style={{ display: 'block', padding: '0.5rem 0.75rem', color: 'var(--text)', textDecoration: 'none', borderRadius: '8px', fontSize: '0.85rem', transition: 'background 0.2s' }}>
+                      📚 My Learning
+                    </Link>
+                    <Link to="/profile" onClick={() => setDropdownOpen(false)} style={{ display: 'block', padding: '0.5rem 0.75rem', color: 'var(--text)', textDecoration: 'none', borderRadius: '8px', fontSize: '0.85rem', transition: 'background 0.2s' }}>
+                      👤 Profile
+                    </Link>
+                    {(user.role === 'admin' || user.role === 'instructor') && (
+                      <Link to="/instructor" onClick={() => setDropdownOpen(false)} style={{ display: 'block', padding: '0.5rem 0.75rem', color: 'var(--text)', textDecoration: 'none', borderRadius: '8px', fontSize: '0.85rem', transition: 'background 0.2s' }}>
+                        📊 Instructor Panel
+                      </Link>
+                    )}
+                    <div style={{ height: '1px', background: 'var(--glass-border)', margin: '0.25rem 0' }} />
+                    <button 
+                      onClick={handleLogout}
+                      style={{ width: '100%', textAlign: 'left', background: 'none', border: 'none', padding: '0.5rem 0.75rem', color: '#ef4444', cursor: 'pointer', borderRadius: '8px', fontSize: '0.85rem', fontWeight: 600, transition: 'background 0.2s' }}
+                    >
+                      🚪 Logout
+                    </button>
+                  </div>
+                )}
+              </div>
+            ) : (
+              <>
+                <button className="btn btn-secondary" onClick={() => { navigate('/login'); setIsMenuOpen(false); }}>Login</button>
+                <button className="btn btn-primary" onClick={() => { navigate('/signup'); setIsMenuOpen(false); }}>Sign Up</button>
+              </>
+            )}
           </div>
         </div>
       </header>
@@ -37,8 +112,14 @@ function Landing() {
             <h2>Empower Your Learning Journey</h2>
             <p>Discover a comprehensive e-learning platform where students learn at their own pace and professors create engaging content with videos, lessons, and interactive quizzes.</p>
             <div className="hero-buttons">
-              <button className="btn btn-primary" onClick={() => navigate('/signup')}>Start Learning</button>
-              <button className="btn btn-secondary" onClick={() => navigate('/signup')}>For Professors</button>
+              {user ? (
+                <button className="btn btn-primary" onClick={() => navigate(user.role === 'instructor' || user.role === 'admin' ? '/instructor' : '/dashboard')}>Go to Dashboard</button>
+              ) : (
+                <>
+                  <button className="btn btn-primary" onClick={() => navigate('/signup')}>Start Learning</button>
+                  <button className="btn btn-secondary" onClick={() => navigate('/signup')}>For Professors</button>
+                </>
+              )}
             </div>
           </div>
           <div className="hero-illustration">

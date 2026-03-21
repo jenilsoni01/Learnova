@@ -109,14 +109,23 @@ const CoursesDashboard = () => {
             <div className="profile-section">
               <h4>My Profile</h4>
               <div className="progress-container">
-                <svg className="progress-circle" viewBox="0 0 100 100">
-                  <circle cx="50" cy="50" r={radius} className="bg-ring" />
-                  <circle
-                    cx="50" cy="50" r={radius}
-                    className="fg-ring"
-                    style={{ strokeDasharray: circumference, strokeDashoffset: strokeOffset }}
-                  />
-                </svg>
+                <div className="progress-ring-wrapper">
+                  <svg className="progress-circle" viewBox="0 0 100 100">
+                    <circle cx="50" cy="50" r={radius} className="bg-ring" />
+                    <circle
+                      cx="50" cy="50" r={radius}
+                      className="fg-ring"
+                      style={{ strokeDasharray: circumference, strokeDashoffset: strokeOffset }}
+                    />
+                  </svg>
+                  <div className="circle-avatar">
+                    {user?.avatar ? (
+                      <img src={user.avatar} alt={user.name} />
+                    ) : (
+                      user?.name?.charAt(0).toUpperCase()
+                    )}
+                  </div>
+                </div>
                 <div className="progress-text">
                   <p className="total-points">Total {userPoints} Points</p>
                   <p className="current-badge">{user.badgeLevel || 'Newbie'}</p>

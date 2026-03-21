@@ -93,9 +93,40 @@
 }
 
 .progress-circle {
+  width: 100%;
+  height: 100%;
+  transform: rotate(-90deg);
+}
+
+.progress-ring-wrapper {
+  position: relative;
   width: 120px;
   height: 120px;
-  transform: rotate(-90deg);
+}
+
+.circle-avatar {
+  position: absolute;
+  top: 50%;
+  left: 50%;
+  transform: translate(-50%, -50%);
+  width: 86px;
+  height: 86px;
+  border-radius: 50%;
+  background: var(--bg);
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  overflow: hidden;
+  border: 4px solid var(--glass-bg);
+  font-size: 2.2rem;
+  font-weight: 700;
+  color: var(--text-h);
+}
+
+.circle-avatar img {
+  width: 100%;
+  height: 100%;
+  object-fit: cover;
 }
 
 .bg-ring {

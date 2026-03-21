@@ -11,7 +11,8 @@ export const AuthProvider = ({ children }) => {
     const checkUser = async () => {
       try {
         const response = await api.get('/auth/me');
-        setUser(response.data.data); // ApiResponse uses .data for payload
+        // getMe controller returns { user, courses } directly
+        setUser(response.data.user || response.data.data?.user || response.data.data); 
       } catch (error) {
         setUser(null);
       } finally {
