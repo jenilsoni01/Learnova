@@ -1,6 +1,7 @@
 import express from "express"
 import cors from "cors"
 import cookieParser from "cookie-parser"
+import { errorHandler } from "./middleware/errorHandler.middleware.js"
 
 // Import routes
 import authRoutes from "./routes/auth.routes.js"
@@ -38,5 +39,8 @@ app.use('/api/reporting', reportingRoutes)
 app.get('/api/health', (req, res) => {
   res.json({ message: 'Server is running' })
 })
+
+// Global Error Handler (must be last)
+app.use(errorHandler)
 
 export default app

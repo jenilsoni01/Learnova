@@ -3,7 +3,12 @@
 // PURPOSE: Handle registration, login, token issuance, and authenticated profile retrieval.
 
 import jwt from 'jsonwebtoken';
+import fs from 'fs';
 import User from '../models/User.js';
+import { uploadOnCloudinary } from '../utils/cloudinary.js';
+import { asyncHandler } from '../utils/asyncHandler.js';
+import { ApiError } from '../utils/ApiError.js';
+import { ApiResponse } from '../utils/ApiResponse.js';
 
 // Global Cookie Options
 const cookieOptions = {
@@ -19,103 +24,125 @@ const signToken = (id) => {
   });
 };
 
-const register = async (req, res) => {
-  try {
-    const { name, email, password, role } = req.body;
+const register = asyncHandler(async (req, res) => {
+  const { name, email, password } = req.body;
+  let avatar = '';
 
-    if (!name || !email || !password) {
-      return res.status(400).json({ message: 'Name, email, and password are required' });
-    }
-
-    if (password.length < 8) {
-      return res.status(400).json({ message: 'Password must be at least 8 characters long' });
-    }
-
-    const normalizedEmail = email.toLowerCase().trim();
-
-    const existingUser = await User.findOne({ email: normalizedEmail });
-    if (existingUser) {
-      return res.status(400).json({ message: 'Email already exists' });
-    }
-
-    const user = await User.create({
-      name: name.trim(),
-      email: normalizedEmail,
-      password,
-      role,
-    });
-
-    const token = signToken(user._id);
-    
-    // Set the cookie using the global options
-    res.cookie('token', token, cookieOptions); 
-
-    return res.status(201).json({
-      token,
-      user: {
-        id: user._id,
-        name: user.name,
-        email: user.email,
-        role: user.role,
-      },
-    });
-  } catch (error) {
-    return res.status(500).json({ message: error.message });
+  // Early validations - if these fail, we MUST delete the file if it was uploaded
+  if (!name || !email || !password) {
+    if (req.file) fs.unlinkSync(req.file.path); // Cleanup
+    throw new ApiError(400, 'Name, email, and password are required');
   }
-};
 
-const login = async (req, res) => {
-  try {
-    const { email, password } = req.body;
+  if (password.length < 8) {
+    if (req.file) fs.unlinkSync(req.file.path); // Cleanup
+    throw new ApiError(400, 'Password must be at least 8 characters long');
+  }
 
-    if (!email || !password) {
-      return res.status(401).json({ message: 'Invalid email or password' });
+  const normalizedEmail = email.toLowerCase().trim();
+
+  const existingUser = await User.findOne({ email: normalizedEmail });
+  if (existingUser) {
+    if (req.file) fs.unlinkSync(req.file.path); // Cleanup
+    throw new ApiError(400, 'Email already exists');
+  }
+
+  // Handle File Upload
+  if (req.file) {
+    const cloudinaryResponse = await uploadOnCloudinary(req.file.path);
+
+    if (!cloudinaryResponse) {
+      // uploadOnCloudinary already deletes the file on failure, so we don't need to do it here
+      throw new ApiError(500, 'Avatar upload failed');
     }
 
-    const normalizedEmail = email.toLowerCase().trim();
-    const user = await User.findOne({ email: normalizedEmail });
-
-    if (!user || !(await user.matchPassword(password))) {
-      return res.status(401).json({ message: 'Invalid email or password' });
-    }
-
-    const token = signToken(user._id);
-    
-    // Set the cookie using the global options
-    res.cookie('token', token, cookieOptions); 
-
-    return res.status(200).json({
-      token,
-      user: {
-        id: user._id,
-        name: user.name,
-        email: user.email,
-        role: user.role,
-        totalPoints: user.totalPoints,
-        badgeLevel: user.badgeLevel,
-      },
-    });
-  } catch (error) {
-    return res.status(500).json({ message: error.message });
+    // Successful upload - delete the local temp file
+    fs.unlinkSync(req.file.path); 
+    avatar = cloudinaryResponse.secure_url || '';
   }
-};
 
-const getMe = async (req, res) => {
-  try {
-    return res.status(200).json(req.user);
-  } catch (error) {
-    return res.status(500).json({ message: error.message });
-  }
-};
+  // Create User
+  const user = await User.create({
+    name: name.trim(),
+    email: normalizedEmail,
+    password,
+    avatar,
+  });
 
-const logout = async (req, res) => {
-  try {
-    // Clear the cookie using the exact same global options
-    res.clearCookie('token', cookieOptions);
-    return res.status(200).json({ message: 'Logged out successfully' });
-  } catch (error) {
-    return res.status(500).json({ message: error.message });
+  const token = signToken(user._id);
+  
+  // Set the cookie using the global options
+  res.cookie('token', token, cookieOptions); 
+
+  return res
+    .status(201)
+    .json(
+      new ApiResponse(201, {
+        token,
+        user: {
+          id: user._id,
+          name: user.name,
+          email: user.email,
+          avatar: user.avatar,
+          role: user.role,
+        },
+      }, 'User registered successfully')
+    );
+});
+
+const login = asyncHandler(async (req, res) => {
+  const { email, password } = req.body;
+
+  if (!email || !password) {
+    throw new ApiError(401, 'Invalid email or password');
   }
-};
+
+  const normalizedEmail = email.toLowerCase().trim();
+  const user = await User.findOne({ email: normalizedEmail });
+
+  if (!user || !(await user.matchPassword(password))) {
+    throw new ApiError(401, 'Invalid email or password');
+  }
+
+  const token = signToken(user._id);
+  
+  // Set the cookie using the global options
+  res.cookie('token', token, cookieOptions); 
+
+  return res
+    .status(200)
+    .json(
+      new ApiResponse(200, {
+        token,
+        user: {
+          id: user._id,
+          name: user.name,
+          email: user.email,
+          avatar: user.avatar,
+          role: user.role,
+          totalPoints: user.totalPoints,
+          badgeLevel: user.badgeLevel,
+        },
+      }, 'User logged in successfully')
+    );
+});
+
+const getMe = asyncHandler(async (req, res) => {
+  return res
+    .status(200)
+    .json(
+      new ApiResponse(200, req.user, 'Current user fetched successfully')
+    );
+});
+
+const logout = asyncHandler(async (req, res) => {
+  // Clear the cookie using the exact same global options
+  res.clearCookie('token', cookieOptions);
+  return res
+    .status(200)
+    .json(
+      new ApiResponse(200, {}, 'Logged out successfully')
+    );
+});
 
 export { signToken, register, login, getMe, logout };
