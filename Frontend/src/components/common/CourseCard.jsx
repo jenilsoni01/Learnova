@@ -8,7 +8,7 @@ const CourseCard = ({ course, progress, showProgress = false }) => {
     navigate(`/courses/${course._id}`);
   };
 
-  const isFree = !course.price || course.price === 0;
+  const isFree = course.accessRule !== 'payment' || !course.price || course.price === 0;
   const coverImg = course.coverImage || '';
 
   return (

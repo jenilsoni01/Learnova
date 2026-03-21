@@ -332,7 +332,7 @@ const CourseDetail = () => {
                 <div style={{ display: 'flex', justifyContent: 'space-between' }}>
                   <span style={{ color: 'var(--text)' }}>Price</span>
                   <span style={{ color: 'var(--text-h)', fontWeight: 600 }}>
-                    {!course.price || course.price === 0 ? 'Free' : `₹${course.price}`}
+                    {course.accessRule !== 'payment' || !course.price || course.price === 0 ? 'Free' : `₹${course.price}`}
                   </span>
                 </div>
               </div>

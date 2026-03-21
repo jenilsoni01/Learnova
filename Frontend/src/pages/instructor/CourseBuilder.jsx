@@ -270,15 +270,24 @@ const CourseBuilder = () => {
                 <input className="form-input" placeholder="React, JavaScript" value={courseData.tags}
                   onChange={e => setCourseData(p => ({ ...p, tags: e.target.value }))} />
               </div>
-              <div className="form-group">
-                <label>Price (₹)</label>
-                <input className="form-input" type="number" min="0" value={courseData.price}
-                  onChange={e => setCourseData(p => ({ ...p, price: e.target.value }))} />
-              </div>
+              {courseData.accessRule === 'payment' && (
+                <div className="form-group">
+                  <label>Price (₹)</label>
+                  <input className="form-input" type="number" min="0" value={courseData.price}
+                    onChange={e => setCourseData(p => ({ ...p, price: e.target.value }))} />
+                </div>
+              )}
               <div className="form-group">
                 <label>Access Rule</label>
                 <select className="form-input" value={courseData.accessRule}
-                  onChange={e => setCourseData(p => ({ ...p, accessRule: e.target.value }))}>
+                  onChange={e => {
+                    const newRule = e.target.value;
+                    setCourseData(p => ({
+                      ...p,
+                      accessRule: newRule,
+                      price: newRule !== 'payment' ? 0 : p.price
+                    }));
+                  }}>
                   <option value="open">Open</option>
                   <option value="invitation">Invitation Only</option>
                   <option value="payment">Payment Required</option>
