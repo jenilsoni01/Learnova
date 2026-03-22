@@ -132,7 +132,13 @@ const QuizPage = () => {
           <div className="results-card">
             <div className={`results-score ${scoreClass}`}>{pct}%</div>
             <div className="results-label">
-              {pct === 100 ? 'Perfect Score! 🏆' : pct >= 60 ? 'Great job! 👏' : 'Keep practicing! 💪'}
+              {pct === 100 ? (
+                <span>Perfect Score! <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="1.5" strokeLinecap="round" strokeLinejoin="round" style={{ width: '16px', height: '16px', display: 'inline-block', verticalAlign: 'middle', marginLeft: '4px' }}><path d="M6 9H4.5a2.5 2.5 0 0 1 0-5H6"/><path d="M18 9h1.5a2.5 2.5 0 0 0 0-5H18"/><path d="M4 22h16"/><path d="M10 14.66V17c0 .55-.47.98-.97 1.21C7.85 18.75 7 20.24 7 22"/><path d="M14 14.66V17c0 .55.47.98.97 1.21C16.15 18.75 17 20.24 17 22"/><path d="M18 2H6v7a6 6 0 0 0 12 0V2Z"/></svg></span>
+              ) : pct >= 60 ? (
+                <span>Great job! <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="1.5" strokeLinecap="round" strokeLinejoin="round" style={{ width: '16px', height: '16px', display: 'inline-block', verticalAlign: 'middle', marginLeft: '4px' }}><path d="M7 3V1.5a.5.5 0 0 1 .5-.5.5.5 0 0 1 .5.5V3"/><path d="M20 8h1.5a.5.5 0 0 1 .5.5.5.5 0 0 1-.5.5H20"/><path d="M7 8H5.5a.5.5 0 0 1-.5-.5.5.5 0 0 1 .5-.5H7"/><path d="M7 14v1.5a.5.5 0 0 1-.5.5.5.5 0 0 1-.5-.5V14"/><path d="M20 15h1.5a.5.5 0 0 1 .5.5.5.5 0 0 1-.5.5H20"/><path d="M14 4h1.5a.5.5 0 0 1 .5.5.5.5 0 0 1-.5.5H14"/><path d="M10 7v5.5a2.5 2.5 0 0 0 5 0V7.1"/></svg></span>
+              ) : (
+                <span>Keep practicing! <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="1.5" strokeLinecap="round" strokeLinejoin="round" style={{ width: '16px', height: '16px', display: 'inline-block', verticalAlign: 'middle', marginLeft: '4px' }}><path d="M6 2v20M18 7v13M6 9l12 4"/><circle cx="12" cy="12" r="3"/></svg></span>
+              )}
             </div>
 
             <div className="results-meta">Attempt #{result.attemptNumber} • Total attempts: {totalAttempts}</div>
@@ -157,7 +163,13 @@ const QuizPage = () => {
                 ← Back to Course
               </button>
               <button className="btn btn-primary" onClick={() => { setResult(null); setAnswers({}); setCurrentQ(0); }}>
-                🔄 Retry Quiz
+                <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="1.5" strokeLinecap="round" strokeLinejoin="round" style={{ width: '16px', height: '16px', display: 'inline-block', verticalAlign: 'middle', marginRight: '6px' }}>
+                  <path d="M3 12a9 9 0 0 1 9-9 9.75 9.75 0 0 1 6.74 2.74L21 8"/>
+                  <path d="M21 3v5h-5"/>
+                  <path d="M21 12a9 9 0 0 1-9 9 9.75 9.75 0 0 1-6.74-2.74L3 16"/>
+                  <path d="M8 16H3v5"/>
+                </svg>
+                Retry Quiz
               </button>
             </div>
 
@@ -281,7 +293,14 @@ const QuizPage = () => {
               onClick={handleSubmit}
               disabled={submitting}
             >
-              {submitting ? 'Submitting...' : '✓ Submit Quiz'}
+              {submitting ? 'Submitting...' : (
+                <span>
+                  <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round" style={{ width: '16px', height: '16px', display: 'inline-block', verticalAlign: 'middle', marginRight: '6px' }}>
+                    <polyline points="20 6 9 17 4 12"/>
+                  </svg>
+                  Submit Quiz
+                </span>
+              )}
             </button>
           )}
         </div>

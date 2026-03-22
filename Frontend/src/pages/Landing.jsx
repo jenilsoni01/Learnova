@@ -127,9 +127,82 @@ function Landing() {
               <div className="circle circle1"></div>
               <div className="circle circle2"></div>
               <div className="circle circle3"></div>
-              <div className="book-icon">📚</div>
-              <div className="video-icon">🎥</div>
-              <div className="quiz-icon">📝</div>
+
+              {/* Modern Dashboard Mockup */}
+              <div className="dashboard-mockup">
+                <div className="mockup-header">
+                  <div className="mockup-dots">
+                    <span></span><span></span><span></span>
+                  </div>
+                  <div className="mockup-tabs">
+                    <div className="tab active"></div>
+                    <div className="tab"></div>
+                    <div className="tab"></div>
+                  </div>
+                </div>
+                <div className="mockup-content">
+                  <div className="mockup-sidebar">
+                    <div className="sidebar-item active"></div>
+                    <div className="sidebar-item"></div>
+                    <div className="sidebar-item"></div>
+                    <div className="sidebar-item"></div>
+                  </div>
+                  <div className="mockup-main">
+                    <div className="mockup-card">
+                      <div className="card-visual">
+                        <svg viewBox="0 0 100 60" className="progress-chart">
+                          <defs>
+                            <linearGradient id="chartGradient" x1="0%" y1="0%" x2="100%" y2="0%">
+                              <stop offset="0%" stopColor="var(--primary)" stopOpacity="0.2"/>
+                              <stop offset="100%" stopColor="var(--primary)" stopOpacity="0.8"/>
+                            </linearGradient>
+                          </defs>
+                          <path d="M0,50 Q25,45 40,30 T70,20 T100,10" fill="none" stroke="var(--primary)" strokeWidth="2"/>
+                          <path d="M0,50 Q25,45 40,30 T70,20 T100,10 L100,60 L0,60 Z" fill="url(#chartGradient)"/>
+                        </svg>
+                      </div>
+                      <div className="card-lines">
+                        <div className="line long"></div>
+                        <div className="line medium"></div>
+                      </div>
+                    </div>
+                    <div className="mockup-stats">
+                      <div className="stat-box">
+                        <div className="stat-icon"></div>
+                        <div className="stat-lines">
+                          <div className="line"></div>
+                          <div className="line short"></div>
+                        </div>
+                      </div>
+                      <div className="stat-box">
+                        <div className="stat-icon"></div>
+                        <div className="stat-lines">
+                          <div className="line"></div>
+                          <div className="line short"></div>
+                        </div>
+                      </div>
+                    </div>
+                  </div>
+                </div>
+              </div>
+
+              {/* Floating Accent Elements */}
+              <div className="floating-badge badge-1">
+                <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2">
+                  <path d="M12 2L15.09 8.26L22 9.27L17 14.14L18.18 21.02L12 17.77L5.82 21.02L7 14.14L2 9.27L8.91 8.26L12 2Z"/>
+                </svg>
+              </div>
+              <div className="floating-badge badge-2">
+                <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2">
+                  <polyline points="20 6 9 17 4 12"/>
+                </svg>
+              </div>
+              <div className="floating-badge badge-3">
+                <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2">
+                  <circle cx="12" cy="12" r="10"/>
+                  <polyline points="12 6 12 12 16 14"/>
+                </svg>
+              </div>
             </div>
           </div>
         </div>
@@ -137,35 +210,75 @@ function Landing() {
 
       <section id="features" className="features">
         <div className="container">
-          <h2>Why Choose Learnova?</h2>
+          <div className="section-header">
+            <span className="section-badge">Features</span>
+            <h2>Why Choose Learnova?</h2>
+            <p className="section-subtitle">Everything you need to create an exceptional learning experience</p>
+          </div>
           <div className="features-grid">
             <div className="feature-card">
-              <div className="feature-icon">📚</div>
+              <div className="feature-icon">
+                <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="1.5" strokeLinecap="round" strokeLinejoin="round">
+                  <path d="M4 19.5A2.5 2.5 0 0 1 6.5 17H20"/>
+                  <path d="M6.5 2H20v20H6.5A2.5 2.5 0 0 1 4 19.5v-15A2.5 2.5 0 0 1 6.5 2z"/>
+                  <line x1="12" y1="6" x2="12" y2="10"/>
+                  <line x1="12" y1="14" x2="12" y2="14"/>
+                </svg>
+              </div>
               <h3>For Students</h3>
               <p>Access high-quality lessons, watch educational videos, and take quizzes to test your knowledge. Learn at your own pace with our interactive platform.</p>
             </div>
             <div className="feature-card">
-              <div className="feature-icon">👨‍🏫</div>
+              <div className="feature-icon">
+                <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="1.5" strokeLinecap="round" strokeLinejoin="round">
+                  <path d="M17 21v-2a4 4 0 0 0-4-4H5a4 4 0 0 0-4 4v2"/>
+                  <circle cx="9" cy="7" r="4"/>
+                  <path d="M23 21v-2a4 4 0 0 0-3-3.87"/>
+                  <path d="M16 3.13a4 4 0 0 1 0 7.75"/>
+                </svg>
+              </div>
               <h3>For Professors</h3>
               <p>Create and manage course content effortlessly. Upload videos, design lessons, and create quizzes to engage your students effectively.</p>
             </div>
             <div className="feature-card">
-              <div className="feature-icon">🎥</div>
+              <div className="feature-icon">
+                <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="1.5" strokeLinecap="round" strokeLinejoin="round">
+                  <polygon points="23 7 16 12 23 17 23 7"/>
+                  <rect x="1" y="5" width="15" height="14" rx="2" ry="2"/>
+                </svg>
+              </div>
               <h3>Video Lessons</h3>
               <p>Engage with dynamic video content that brings complex topics to life. Our platform supports various video formats for optimal learning.</p>
             </div>
             <div className="feature-card">
-              <div className="feature-icon">📝</div>
+              <div className="feature-icon">
+                <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="1.5" strokeLinecap="round" strokeLinejoin="round">
+                  <path d="M9 11l3 3L22 4"/>
+                  <path d="M21 12v7a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2V5a2 2 0 0 1 2-2h11"/>
+                </svg>
+              </div>
               <h3>Interactive Quizzes</h3>
               <p>Reinforce learning with comprehensive quizzes. Track progress and receive instant feedback to improve understanding.</p>
             </div>
             <div className="feature-card">
-              <div className="feature-icon">📊</div>
+              <div className="feature-icon">
+                <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="1.5" strokeLinecap="round" strokeLinejoin="round">
+                  <line x1="18" y1="20" x2="18" y2="10"/>
+                  <line x1="12" y1="20" x2="12" y2="4"/>
+                  <line x1="6" y1="20" x2="6" y2="14"/>
+                  <line x1="2" y1="20" x2="22" y2="20"/>
+                </svg>
+              </div>
               <h3>Progress Tracking</h3>
               <p>Monitor your learning journey with detailed analytics and progress reports. Stay motivated and on track.</p>
             </div>
             <div className="feature-card">
-              <div className="feature-icon">🌐</div>
+              <div className="feature-icon">
+                <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="1.5" strokeLinecap="round" strokeLinejoin="round">
+                  <rect x="5" y="2" width="14" height="20" rx="2" ry="2"/>
+                  <line x1="12" y1="18" x2="12" y2="18"/>
+                </svg>
+              </div>
               <h3>Responsive Design</h3>
               <p>Learn anywhere, anytime. Our platform is fully responsive and works seamlessly on all devices.</p>
             </div>
@@ -176,20 +289,61 @@ function Landing() {
       <section id="about" className="about">
         <div className="container">
           <div className="about-content">
+            <span className="section-badge">About Us</span>
             <h2>About Learnova</h2>
             <p>Learnova is revolutionizing education by bridging the gap between traditional learning and modern technology. Our platform empowers both students and educators to create a more engaging and effective learning environment.</p>
             <p>With features like video lessons, interactive quizzes, and comprehensive content management, Learnova makes education accessible, enjoyable, and efficient for everyone involved.</p>
+            <div className="about-features">
+              <div className="about-feature">
+                <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2">
+                  <polyline points="20 6 9 17 4 12"/>
+                </svg>
+                <span>Trusted by educators worldwide</span>
+              </div>
+              <div className="about-feature">
+                <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2">
+                  <polyline points="20 6 9 17 4 12"/>
+                </svg>
+                <span>24/7 customer support</span>
+              </div>
+              <div className="about-feature">
+                <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2">
+                  <polyline points="20 6 9 17 4 12"/>
+                </svg>
+                <span>Regular platform updates</span>
+              </div>
+            </div>
           </div>
           <div className="about-stats">
             <div className="stat">
+              <div className="stat-icon-wrapper">
+                <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="1.5">
+                  <path d="M17 21v-2a4 4 0 0 0-4-4H5a4 4 0 0 0-4 4v2"/>
+                  <circle cx="9" cy="7" r="4"/>
+                  <path d="M23 21v-2a4 4 0 0 0-3-3.87"/>
+                  <path d="M16 3.13a4 4 0 0 1 0 7.75"/>
+                </svg>
+              </div>
               <h3>10,000+</h3>
               <p>Students Enrolled</p>
             </div>
             <div className="stat">
+              <div className="stat-icon-wrapper">
+                <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="1.5">
+                  <path d="M4 19.5A2.5 2.5 0 0 1 6.5 17H20"/>
+                  <path d="M6.5 2H20v20H6.5A2.5 2.5 0 0 1 4 19.5v-15A2.5 2.5 0 0 1 6.5 2z"/>
+                </svg>
+              </div>
               <h3>500+</h3>
               <p>Courses Available</p>
             </div>
             <div className="stat">
+              <div className="stat-icon-wrapper">
+                <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="1.5">
+                  <path d="M20 21v-2a4 4 0 0 0-4-4H8a4 4 0 0 0-4 4v2"/>
+                  <circle cx="12" cy="7" r="4"/>
+                </svg>
+              </div>
               <h3>200+</h3>
               <p>Expert Professors</p>
             </div>

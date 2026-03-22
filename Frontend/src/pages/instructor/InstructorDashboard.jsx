@@ -194,7 +194,11 @@ const InstructorDashboard = () => {
           <p>Manage your courses and track student progress.</p>
           <div className="header-actions">
             <button className="btn btn-primary" onClick={() => setIsCreateModalOpen(true)}>
-              ➕ Create Course
+              <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round" style={{ width: '16px', height: '16px', display: 'inline-block', verticalAlign: 'middle', marginRight: '6px' }}>
+                <line x1="12" y1="5" x2="12" y2="19"/>
+                <line x1="5" y1="12" x2="19" y2="12"/>
+              </svg>
+              Create Course
             </button>
             <div className="view-toggle">
               <button 
@@ -218,22 +222,44 @@ const InstructorDashboard = () => {
         {/* Stats */}
         <div className="instructor-stats">
           <div className="inst-stat-card animate-fade-in-up" style={{ animationDelay: '0s' }}>
-            <div className="stat-icon">📚</div>
+            <div className="stat-icon">
+              <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round">
+                <path d="M4 19.5A2.5 2.5 0 0 1 6.5 17H20"/>
+                <path d="M6.5 2H20v20H6.5A2.5 2.5 0 0 1 4 19.5v-15A2.5 2.5 0 0 1 6.5 2z"/>
+              </svg>
+            </div>
             <div className="stat-number">{totalCourses}</div>
             <div className="stat-label">Total Courses</div>
           </div>
           <div className="inst-stat-card animate-fade-in-up" style={{ animationDelay: '0.1s' }}>
-            <div className="stat-icon">👥</div>
+            <div className="stat-icon">
+              <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round">
+                <path d="M17 21v-2a4 4 0 0 0-4-4H5a4 4 0 0 0-4 4v2"/>
+                <circle cx="9" cy="7" r="4"/>
+                <path d="M23 21v-2a4 4 0 0 0-3-3.87"/>
+                <path d="M16 3.13a4 4 0 0 1 0 7.75"/>
+              </svg>
+            </div>
             <div className="stat-number">{totalStudents}</div>
             <div className="stat-label">Total Students</div>
           </div>
           <div className="inst-stat-card animate-fade-in-up" style={{ animationDelay: '0.2s' }}>
-            <div className="stat-icon">✅</div>
+            <div className="stat-icon">
+              <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round">
+                <path d="M22 11.08V12a10 10 0 1 1-5.93-9.14"/>
+                <polyline points="22 4 12 14.01 9 11.01"/>
+              </svg>
+            </div>
             <div className="stat-number">{totalCompleted}</div>
             <div className="stat-label">Completed</div>
           </div>
           <div className="inst-stat-card animate-fade-in-up" style={{ animationDelay: '0.3s' }}>
-            <div className="stat-icon">📈</div>
+            <div className="stat-icon">
+              <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round">
+                <polyline points="23 6 13.5 15.5 8.5 10.5 1 18"/>
+                <polyline points="17 6 23 6 23 12"/>
+              </svg>
+            </div>
             <div className="stat-number">{totalInProgress}</div>
             <div className="stat-label">In Progress</div>
           </div>
@@ -251,7 +277,10 @@ const InstructorDashboard = () => {
                 className="form-input"
                 style={{ width: '100%', paddingLeft: '2rem', fontSize: '0.85rem' }}
               />
-              <span style={{ position: 'absolute', left: '0.5rem', top: '50%', transform: 'translateY(-50%)', fontSize: '0.85rem' }}>🔍</span>
+              <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round" style={{ position: 'absolute', left: '0.5rem', top: '50%', transform: 'translateY(-50%)', width: '16px', height: '16px', color: 'var(--text-muted)' }}>
+                <circle cx="11" cy="11" r="8"/>
+                <path d="m21 21-4.35-4.35"/>
+              </svg>
             </div>
           </div>
 
@@ -293,25 +322,53 @@ const InstructorDashboard = () => {
                           className="btn btn-secondary btn-sm"
                           onClick={() => navigate(`/courses/${course._id}`)}
                         >
-                          👁 Preview
+                          <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round">
+                            <path d="M1 12s4-8 11-8 11 8 11 8-4 8-11 8-11-8-11-8z"/>
+                            <circle cx="12" cy="12" r="3"/>
+                          </svg>
+                          Preview
                         </button>
                         <button
                           className="btn btn-secondary btn-sm"
                           onClick={() => navigate(`/instructor/edit/${course._id}`)}
                         >
-                          ✏️ Edit
+                          <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round">
+                            <path d="M17 3a2.828 2.828 0 1 1 4 4L7.5 20.5 2 22l1.5-5.5L17 3z"/>
+                          </svg>
+                          Edit
                         </button>
                         <button
                           className="btn btn-secondary btn-sm"
                           onClick={() => handleTogglePublish(course._id)}
                         >
-                          {course.isPublished ? '📤 Unpublish' : '📢 Publish'}
+                          {course.isPublished ? (
+                            <>
+                              <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round">
+                                <polyline points="17 1 21 5 17 9"/>
+                                <path d="M3 11V9a4 4 0 0 1 4-4h14"/>
+                                <polyline points="7 23 3 19 7 15"/>
+                                <path d="M21 13v2a4 4 0 0 1-4 4H3"/>
+                              </svg>
+                              Unpublish
+                            </>
+                          ) : (
+                            <>
+                              <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round">
+                                <circle cx="12" cy="12" r="10"/>
+                                <polyline points="12 6 12 12 16 14"/>
+                              </svg>
+                              Publish
+                            </>
+                          )}
                         </button>
                         <button
                           className="btn btn-danger btn-sm"
                           onClick={() => handleDelete(course._id)}
                         >
-                          🗑️
+                          <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round">
+                            <polyline points="3 6 5 6 21 6"/>
+                            <path d="M19 6v14a2 2 0 0 1-2 2H7a2 2 0 0 1-2-2V6m3 0V4a2 2 0 0 1 2-2h4a2 2 0 0 1 2 2v2"/>
+                          </svg>
                         </button>
                       </div>
                     </td>
@@ -345,12 +402,46 @@ const InstructorDashboard = () => {
                     </div>
                   </div>
                   <div className="card-actions">
-                    <button className="btn btn-secondary btn-sm" onClick={() => navigate(`/courses/${course._id}`)}>👁 Preview</button>
-                    <button className="btn btn-secondary btn-sm" onClick={() => navigate(`/instructor/edit/${course._id}`)}>✏️ Edit</button>
-                    <button className="btn btn-secondary btn-sm" onClick={() => handleTogglePublish(course._id)}>
-                      {course.isPublished ? '📤 Unpublish' : '📢 Publish'}
+                    <button className="btn btn-secondary btn-sm" onClick={() => navigate(`/courses/${course._id}`)}>
+                      <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round">
+                        <path d="M1 12s4-8 11-8 11 8 11 8-4 8-11 8-11-8-11-8z"/>
+                        <circle cx="12" cy="12" r="3"/>
+                      </svg>
+                      Preview
                     </button>
-                    <button className="btn btn-danger btn-sm" onClick={() => handleDelete(course._id)}>🗑️</button>
+                    <button className="btn btn-secondary btn-sm" onClick={() => navigate(`/instructor/edit/${course._id}`)}>
+                      <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round">
+                        <path d="M17 3a2.828 2.828 0 1 1 4 4L7.5 20.5 2 22l1.5-5.5L17 3z"/>
+                      </svg>
+                      Edit
+                    </button>
+                    <button className="btn btn-secondary btn-sm" onClick={() => handleTogglePublish(course._id)}>
+                      {course.isPublished ? (
+                        <>
+                          <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round">
+                            <polyline points="17 1 21 5 17 9"/>
+                            <path d="M3 11V9a4 4 0 0 1 4-4h14"/>
+                            <polyline points="7 23 3 19 7 15"/>
+                            <path d="M21 13v2a4 4 0 0 1-4 4H3"/>
+                          </svg>
+                          Unpublish
+                        </>
+                      ) : (
+                        <>
+                          <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round">
+                            <circle cx="12" cy="12" r="10"/>
+                            <polyline points="12 6 12 12 16 14"/>
+                          </svg>
+                          Publish
+                        </>
+                      )}
+                    </button>
+                    <button className="btn btn-danger btn-sm" onClick={() => handleDelete(course._id)}>
+                      <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round">
+                        <polyline points="3 6 5 6 21 6"/>
+                        <path d="M19 6v14a2 2 0 0 1-2 2H7a2 2 0 0 1-2-2V6m3 0V4a2 2 0 0 1 2-2h4a2 2 0 0 1 2 2v2"/>
+                      </svg>
+                    </button>
                   </div>
                 </div>
               ))}
@@ -496,15 +587,7 @@ const InstructorDashboard = () => {
                 </div>
               )}
 
-              <div className="form-group">
-                <label>Website URL</label>
-                <input
-                  className="form-input"
-                  value={createForm.websiteUrl}
-                  onChange={(e) => setCreateForm((prev) => ({ ...prev, websiteUrl: e.target.value }))}
-                  placeholder="https://example.com"
-                />
-              </div>
+              
 
               <div className="form-group">
                 <label>Tags (comma separated)</label>
