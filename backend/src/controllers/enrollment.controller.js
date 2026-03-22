@@ -7,7 +7,7 @@ import Enrollment from '../models/Enrollment.js';
 import Course from '../models/Course.js';
 import Payment from '../models/Payment.js';
 import { computeCompletionPct } from '../utils/progress.utils.js';
-
+import { sendPaymentSuccessEmail } from '../utils/paymentMail.service.js';
 // ---------------------------------------------------------------------------
 // Razorpay instance (shared, created once)
 // ---------------------------------------------------------------------------
@@ -341,7 +341,24 @@ export const verifyPaymentAndEnroll = async (req, res) => {
     }
 
     await enrollment.populate('course', 'title coverImage description');
-
+    // ── 7. Send confirmation email (best effort) ─────────────────────────
+     await sendPaymentSuccessEmail({
+      to: req.user.email,
+      name: req.user.name,
+      courseTitle: enrollment.course.title,
+      amount: payment.amount,
+      currency: payment.currency,
+      razorpayPaymentId: payment.razorpay_payment_id,
+      orderId: payment.razorpay_order_id,
+      paidAt: payment.verifiedAt,
+    }).then((emailResult) => {
+      if (emailResult.sent) {
+        console.log(`Payment success email sent to ${req.user.email}`); 
+      } else {
+        console.warn(`Failed to send payment success email to ${req.user.email}: ${emailResult.reason}`);
+      }
+    });
+    
     return res.status(200).json({
       success: true,
       message: 'Payment verified and enrollment completed successfully',
