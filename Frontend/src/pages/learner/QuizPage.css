@@ -43,6 +43,75 @@
   transition: width 0.4s ease;
 }
 
+.attempts-panel {
+  background: var(--glass-bg);
+  border: 1px solid var(--glass-border);
+  border-radius: 16px;
+  padding: 1rem 1.25rem;
+  margin-bottom: 1.25rem;
+}
+
+.attempts-panel h3 {
+  margin: 0 0 0.75rem;
+  font-size: 0.95rem;
+  color: var(--text-h);
+}
+
+.attempts-list {
+  display: flex;
+  flex-direction: column;
+  gap: 0.5rem;
+}
+
+.attempt-row {
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
+  padding: 0.7rem 0.85rem;
+  border-radius: 10px;
+  border: 1px solid rgba(255, 255, 255, 0.08);
+  background: rgba(255, 255, 255, 0.02);
+}
+
+.attempt-left {
+  min-width: 0;
+}
+
+.attempt-title {
+  font-size: 0.85rem;
+  font-weight: 700;
+  color: var(--text-h);
+}
+
+.attempt-time {
+  font-size: 0.75rem;
+  color: var(--text);
+  margin-top: 0.15rem;
+}
+
+.attempt-right {
+  text-align: right;
+  flex-shrink: 0;
+}
+
+.attempt-score {
+  font-size: 0.85rem;
+  font-weight: 700;
+  color: var(--text-h);
+}
+
+.attempt-pct {
+  font-size: 0.75rem;
+  color: var(--primary);
+  margin-top: 0.15rem;
+}
+
+.attempts-empty {
+  margin: 0;
+  color: var(--text);
+  font-size: 0.85rem;
+}
+
 /* Question card */
 .question-card {
   background: var(--glass-bg);
@@ -211,6 +280,12 @@
   margin-bottom: 2rem;
 }
 
+.results-meta {
+  font-size: 0.9rem;
+  color: var(--text);
+  margin-bottom: 1rem;
+}
+
 .results-stats {
   display: grid;
   grid-template-columns: repeat(3, 1fr);
@@ -243,6 +318,11 @@
   justify-content: center;
 }
 
+.results-attempts {
+  margin-top: 1.5rem;
+  text-align: left;
+}
+
 @media (max-width: 600px) {
   .quiz-container {
     padding: 1.5rem 1rem;
@@ -254,5 +334,10 @@
 
   .results-stats {
     grid-template-columns: 1fr;
+  }
+
+  .attempt-row {
+    align-items: flex-start;
+    gap: 0.5rem;
   }
 }
