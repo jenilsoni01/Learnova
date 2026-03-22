@@ -2,6 +2,7 @@ import { useCallback, useEffect, useState } from 'react';
 import Navbar from '../components/common/Navbar';
 import api from '../api/axios';
 import Toast from '../components/common/Toast';
+import './Leaderboard.css';
 
 const Leaderboard = () => {
   const [rows, setRows] = useState([]);
@@ -49,23 +50,22 @@ const Leaderboard = () => {
   }, [fetchLeaderboard]);
 
   return (
-    <div className="instructor-dashboard">
+    <div className="leaderboard">
       <Navbar />
-      <div className="container" style={{ paddingTop: '1.5rem' }}>
-        <div className="instructor-header" style={{ marginBottom: '1rem' }}>
+      <div className="container">
+        <div className="leaderboard-header">
           <h1 className="gradient-text">General Leaderboard</h1>
           <p>All learners ranked by total points.</p>
         </div>
 
-        <div style={{ display: 'flex', gap: '0.5rem', marginBottom: '1rem', flexWrap: 'wrap' }}>
+        <div className="leaderboard-controls">
           <input
             value={search}
             onChange={(e) => setSearch(e.target.value)}
             placeholder="Search learner..."
-            className="form-input"
-            style={{ maxWidth: '280px' }}
+            className="form-input search-input"
           />
-          <select className="form-input" value={limit} onChange={(e) => setLimit(Number(e.target.value))} style={{ width: '90px' }}>
+          <select className="form-input limit-select" value={limit} onChange={(e) => setLimit(Number(e.target.value))}>
             <option value={10}>10</option>
             <option value={20}>20</option>
             <option value={50}>50</option>
@@ -84,42 +84,41 @@ const Leaderboard = () => {
             </thead>
             <tbody>
               {loading ? (
-                <tr><td colSpan={4}>Loading...</td></tr>
+                <tr><td colSpan={4} className="loading-row">Loading...</td></tr>
               ) : rows.length === 0 ? (
-                <tr><td colSpan={4}>No learners found</td></tr>
+                <tr><td colSpan={4} className="empty-row">No learners found</td></tr>
               ) : (
                 rows.map((r) => (
                   <tr key={r._id}>
-                    <td>#{r.rank}</td>
+                    <td className={`rank-cell ${r.rank <= 3 ? `top-${r.rank}` : ''}`}>#{r.rank}</td>
                     <td>
-                      <div style={{ display: 'flex', alignItems: 'center', gap: '0.5rem' }}>
-                        <div style={{ width: 28, height: 28, borderRadius: '50%', overflow: 'hidden', background: 'rgba(255,255,255,0.08)', display: 'grid', placeItems: 'center' }}>
-                          {r.avatar ? <img src={r.avatar} alt={r.name} style={{ width: '100%', height: '100%', objectFit: 'cover' }} /> : (r.name?.charAt(0) || '?')}
+                      <div className="user-info">
+                        <div className="user-avatar">
+                          {r.avatar ? <img src={r.avatar} alt={r.name} /> : (r.name?.charAt(0) || '?')}
                         </div>
-                        <div>
-                          <div style={{ fontWeight: 600 }}>{r.name}</div>
-                          <div style={{ fontSize: '0.75rem', color: 'var(--text)' }}>{r.email}</div>
+                        <div className="user-details">
+                          <div className="user-name">{r.name}</div>
+                          <div className="user-email">{r.email}</div>
                         </div>
                       </div>
                     </td>
-                    <td>{r.badgeLevel || 'Newbie'}</td>
-                    <td>{r.totalPoints || 0}</td>
+                    <td><span className="badge-cell">{r.badgeLevel || 'Newbie'}</span></td>
+                    <td className="points-cell">{r.totalPoints || 0}</td>
                   </tr>
                 ))
               )}
             </tbody>
           </table>
 
-          <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', marginTop: '1rem', gap: '0.75rem', flexWrap: 'wrap' }}>
-            <div style={{ display: 'flex', alignItems: 'center', gap: '0.4rem' }}>
+          <div className="pagination-controls">
+            <div className="pagination-nav">
               <button className="btn btn-secondary btn-sm" disabled={currentPage <= 1} onClick={() => setCurrentPage((p) => Math.max(1, p - 1))}>Prev</button>
-              <span style={{ fontSize: '0.85rem' }}>Page {currentPage} / {totalPages}</span>
+              <span className="pagination-info">Page {currentPage} / {totalPages}</span>
               <button className="btn btn-secondary btn-sm" disabled={currentPage >= totalPages} onClick={() => setCurrentPage((p) => Math.min(totalPages, p + 1))}>Next</button>
             </div>
-            <div style={{ display: 'flex', alignItems: 'center', gap: '0.35rem' }}>
+            <div className="pagination-jump">
               <input
-                className="form-input"
-                style={{ width: '70px', padding: '0.45rem' }}
+                className="form-input page-input"
                 value={pageInput}
                 onChange={(e) => setPageInput(e.target.value)}
               />

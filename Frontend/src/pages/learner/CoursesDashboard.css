@@ -1,26 +1,30 @@
 /* =========================================
-   Courses Dashboard — Updated Styles
+   Courses Dashboard — Odoo-Inspired Design
    ========================================= */
 
 .dashboard {
   min-height: 100vh;
-  background: var(--bg);
+  background: var(--bg-secondary);
 }
 
 .dashboard-hero {
   padding: 100px 0 2rem;
   text-align: center;
+  background: white;
+  border-bottom: 1px solid var(--border-light);
 }
 
 .dashboard-hero h1 {
-  font-size: 2.5rem;
-  font-weight: 800;
+  font-size: 2.25rem;
+  font-weight: 700;
   margin-bottom: 0.5rem;
+  color: var(--text-h);
 }
 
 .dashboard-hero p {
   color: var(--text);
   margin-bottom: 1.5rem;
+  font-size: 1.0625rem;
 }
 
 .dashboard-search {
@@ -35,19 +39,26 @@
   top: 50%;
   transform: translateY(-50%);
   z-index: 1;
-  font-size: 1rem;
+  width: 18px;
+  height: 18px;
+  color: var(--text-muted);
 }
 
 .dashboard-search .form-input {
   padding-left: 2.75rem;
-  border-radius: 12px;
+  border-radius: 10px;
+  background: var(--bg-secondary);
+}
+
+.dashboard-search .form-input:focus {
+  background: white;
 }
 
 .dashboard-layout {
   display: grid;
-  grid-template-columns: 1fr 280px;
+  grid-template-columns: 1fr 300px;
   gap: 2rem;
-  padding-bottom: 3rem;
+  padding: 2rem 0 3rem;
   align-items: start;
 }
 
@@ -85,40 +96,42 @@
 
 .dashboard-filters {
   display: flex;
-  gap: 1rem;
+  gap: 0.75rem;
   align-items: center;
 }
 
 .category-select {
-  padding: 0.6rem 1rem;
-  border-radius: 12px;
-  background-color: var(--glass-bg);
-  border: 1px solid var(--glass-border);
+  padding: 0.625rem 1rem;
+  border-radius: 8px;
+  background: white;
+  border: 1px solid var(--border);
   color: var(--text-h);
   font-size: 0.9rem;
   cursor: pointer;
   outline: none;
+  transition: all 0.2s;
 }
 
 .category-select:focus {
   border-color: var(--primary);
+  box-shadow: 0 0 0 3px rgba(113, 75, 103, 0.1);
 }
 
 .view-toggle {
   display: flex;
-  background: var(--glass-bg);
-  border: 1px solid var(--glass-border);
-  border-radius: 10px;
-  padding: 0.2rem;
+  background: white;
+  border: 1px solid var(--border);
+  border-radius: 8px;
+  padding: 0.25rem;
 }
 
 .toggle-btn {
   background: transparent;
   border: none;
-  border-radius: 8px;
-  padding: 0.4rem;
+  border-radius: 6px;
+  padding: 0.5rem;
   cursor: pointer;
-  color: var(--text);
+  color: var(--text-light);
   display: flex;
   align-items: center;
   justify-content: center;
@@ -138,11 +151,11 @@
 .profile-sidebar {
   position: sticky;
   top: 90px;
-  background: var(--glass-bg);
-  border: 1px solid var(--glass-border);
-  border-radius: 16px;
+  background: white;
+  border: 1px solid var(--border-light);
+  border-radius: 12px;
   padding: 1.5rem;
-  backdrop-filter: var(--glass-blur);
+  box-shadow: var(--card-shadow);
 }
 
 .profile-section {
@@ -151,11 +164,12 @@
 
 .profile-section h4,
 .badges-section h4 {
-  font-size: 0.85rem;
+  font-size: 0.8125rem;
   text-transform: uppercase;
   letter-spacing: 0.5px;
-  color: var(--text);
+  color: var(--text-light);
   margin-bottom: 1rem;
+  font-weight: 600;
 }
 
 .progress-container {
@@ -185,15 +199,15 @@
   width: 86px;
   height: 86px;
   border-radius: 50%;
-  background: var(--bg);
+  background: var(--bg-tertiary);
   display: flex;
   align-items: center;
   justify-content: center;
   overflow: hidden;
-  border: 4px solid var(--glass-bg);
-  font-size: 2.2rem;
+  border: 4px solid white;
+  font-size: 2rem;
   font-weight: 700;
-  color: var(--text-h);
+  color: var(--primary);
 }
 
 .circle-avatar img {
@@ -204,13 +218,12 @@
 
 .bg-ring {
   fill: none;
-  stroke: rgba(255, 255, 255, 0.06);
+  stroke: var(--bg-tertiary);
   stroke-width: 6;
 }
 
 .fg-ring {
   fill: none;
-  stroke: url(#progressGradient);
   stroke: var(--primary);
   stroke-width: 6;
   stroke-linecap: round;
@@ -222,14 +235,14 @@
 }
 
 .total-points {
-  font-size: 0.9rem;
+  font-size: 0.9375rem;
   font-weight: 600;
   color: var(--text-h);
 }
 
 .current-badge {
-  font-size: 0.8rem;
-  color: #a5b4fc;
+  font-size: 0.8125rem;
+  color: var(--primary);
   font-weight: 600;
 }
 
@@ -244,20 +257,20 @@
   display: flex;
   justify-content: space-between;
   align-items: center;
-  padding: 0.5rem 0.75rem;
-  border-radius: 10px;
-  border: 1px solid var(--glass-border);
-  font-size: 0.82rem;
+  padding: 0.625rem 0.875rem;
+  border-radius: 8px;
+  border: 1px solid var(--border-light);
+  font-size: 0.8125rem;
   transition: all 0.2s;
 }
 
 .badge-item.unlocked {
-  background: rgba(99, 102, 241, 0.08);
-  border-color: rgba(99, 102, 241, 0.2);
+  background: rgba(113, 75, 103, 0.06);
+  border-color: rgba(113, 75, 103, 0.15);
 }
 
 .badge-item.locked {
-  opacity: 0.4;
+  opacity: 0.5;
 }
 
 .badge-name {
@@ -266,7 +279,7 @@
 }
 
 .badge-points {
-  color: var(--text);
+  color: var(--text-light);
   font-size: 0.75rem;
 }
 
@@ -276,15 +289,24 @@
   position: fixed;
   bottom: 20px;
   right: 20px;
-  padding: 0.75rem 1.25rem;
-  border-radius: 30px;
-  background: linear-gradient(135deg, var(--primary), var(--accent));
+  padding: 0.875rem 1.5rem;
+  border-radius: 50px;
+  background: var(--primary);
   color: white;
   border: none;
   font-weight: 600;
   cursor: pointer;
   z-index: 100;
-  box-shadow: 0 8px 25px -5px var(--primary-glow);
+  box-shadow: 0 8px 24px -4px rgba(113, 75, 103, 0.35);
+}
+
+.mobile-bio-btn:hover {
+  background: var(--primary-hover);
+}
+
+.mobile-bio-btn svg {
+  width: 20px;
+  height: 20px;
 }
 
 .profile-overlay {
@@ -307,6 +329,7 @@
     z-index: 999;
     overflow-y: auto;
     padding-top: 2rem;
+    box-shadow: -4px 0 24px rgba(0, 0, 0, 0.1);
   }
 
   .profile-sidebar.open {
@@ -314,24 +337,35 @@
   }
 
   .mobile-bio-btn {
-    display: block;
+    display: flex;
+    align-items: center;
+    gap: 0.5rem;
   }
 
   .profile-overlay {
     display: block;
     position: fixed;
     inset: 0;
-    background: rgba(0, 0, 0, 0.6);
+    background: rgba(0, 0, 0, 0.4);
     z-index: 998;
   }
 }
 
 @media (max-width: 600px) {
+  .dashboard-hero {
+    padding: 80px 0 1.5rem;
+  }
+
   .dashboard-hero h1 {
-    font-size: 1.8rem;
+    font-size: 1.5rem;
   }
 
   .courses-grid {
     grid-template-columns: 1fr;
+  }
+
+  .dashboard-filters {
+    width: 100%;
+    justify-content: space-between;
   }
 }
