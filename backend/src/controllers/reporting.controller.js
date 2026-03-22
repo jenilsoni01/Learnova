@@ -2,6 +2,53 @@ import Course from '../models/Course.js';
 import Enrollment from '../models/Enrollment.js';
 import LessonProgress from '../models/LessonProgress.js';
 import Lesson from '../models/Lesson.js';
+import User from '../models/User.js';
+
+export const getGeneralLeaderboard = async (req, res) => {
+  try {
+    const page = Math.max(parseInt(req.query.page, 10) || 1, 1);
+    const limit = Math.max(parseInt(req.query.limit, 10) || 10, 1);
+    const skip = (page - 1) * limit;
+    const search = String(req.query.search || '').trim();
+
+    const filter = { role: 'learner' };
+    if (search) {
+      filter.$or = [
+        { name: { $regex: search, $options: 'i' } },
+        { email: { $regex: search, $options: 'i' } },
+      ];
+    }
+
+    const [totalItems, learners] = await Promise.all([
+      User.countDocuments(filter),
+      User.find(filter)
+        .select('name email avatar totalPoints badgeLevel createdAt')
+        .sort({ totalPoints: -1, createdAt: 1 })
+        .skip(skip)
+        .limit(limit)
+        .lean(),
+    ]);
+
+    const totalPages = Math.max(Math.ceil(totalItems / limit), 1);
+
+    return res.json({
+      data: learners.map((learner, idx) => ({
+        rank: skip + idx + 1,
+        ...learner,
+      })),
+      pagination: {
+        currentPage: page,
+        totalPages,
+        totalItems,
+        limit,
+        hasNextPage: page < totalPages,
+        hasPrevPage: page > 1,
+      },
+    });
+  } catch (err) {
+    return res.status(500).json({ message: err.message });
+  }
+};
 
 // Get course reporting dashboard
 export const getReportingDashboard = async (req, res) => {

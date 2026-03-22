@@ -1,5 +1,27 @@
 import { useState, useEffect, useCallback, useRef } from 'react';
 
+const normalizeResponse = (res) => {
+  if (Array.isArray(res)) {
+    return { items: res, hasNextPage: false };
+  }
+
+  if (Array.isArray(res?.data)) {
+    return {
+      items: res.data,
+      hasNextPage: Boolean(res?.pagination?.hasNextPage),
+    };
+  }
+
+  if (Array.isArray(res?.data?.data)) {
+    return {
+      items: res.data.data,
+      hasNextPage: Boolean(res?.data?.pagination?.hasNextPage),
+    };
+  }
+
+  return { items: [], hasNextPage: false };
+};
+
 const useInfiniteScroll = (fetchFn, deps = []) => {
   const [items, setItems]         = useState([]);
   const [page, setPage]           = useState(1);
@@ -25,10 +47,14 @@ const useInfiniteScroll = (fetchFn, deps = []) => {
     setError(null);
     try {
       const res = await fetchFn(pageToLoad);
-      setItems(prev =>
-        pageToLoad === 1 ? res.data : [...prev, ...res.data]
-      );
-      setHasMore(res.pagination.hasNextPage);
+      const { items: newItems, hasNextPage } = normalizeResponse(res);
+
+      setItems(prev => {
+        const safePrev = Array.isArray(prev) ? prev : [];
+        return pageToLoad === 1 ? newItems : [...safePrev, ...newItems];
+      });
+
+      setHasMore(hasNextPage);
       setPage(pageToLoad + 1);
     } catch (err) {
       setError('Failed to load. Please try again.');

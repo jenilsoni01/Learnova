@@ -14,7 +14,21 @@ const QuizPage = () => {
   const [loading, setLoading] = useState(true);
   const [submitting, setSubmitting] = useState(false);
   const [result, setResult] = useState(null);
+  const [attemptHistory, setAttemptHistory] = useState([]);
+  const [historyLoading, setHistoryLoading] = useState(true);
   const [toast, setToast] = useState(null);
+
+  const loadAttempts = async () => {
+    try {
+      setHistoryLoading(true);
+      const res = await api.get(`/quizzes/${quizId}/attempts/me`);
+      setAttemptHistory(Array.isArray(res.data) ? res.data : []);
+    } catch {
+      setAttemptHistory([]);
+    } finally {
+      setHistoryLoading(false);
+    }
+  };
 
   useEffect(() => {
     const fetchQuiz = async () => {
@@ -32,9 +46,23 @@ const QuizPage = () => {
       }
     };
     fetchQuiz();
+    loadAttempts();
   }, [courseId, quizId]);
 
   const questions = quiz?.questions || [];
+  const totalAttempts = attemptHistory.length;
+
+  const formatAttemptPct = (attempt) => {
+    if (!attempt?.totalQuestions) return 0;
+    return Math.round((attempt.score / attempt.totalQuestions) * 100);
+  };
+
+  const formatAttemptDate = (value) => {
+    if (!value) return 'Unknown time';
+    const date = new Date(value);
+    if (Number.isNaN(date.getTime())) return 'Unknown time';
+    return date.toLocaleString();
+  };
 
   const handleOptionSelect = (questionId, optionId) => {
     if (result) return; // Don't allow changes after submit
@@ -60,6 +88,7 @@ const QuizPage = () => {
 
       const res = await api.post(`/quizzes/${quizId}/attempt`, { answers: answersPayload });
       setResult(res.data);
+      await loadAttempts();
       setToast({ message: 'Quiz submitted! 🎉', type: 'success' });
     } catch (err) {
       setToast({ message: err.response?.data?.message || 'Failed to submit quiz', type: 'error' });
@@ -106,6 +135,8 @@ const QuizPage = () => {
               {pct === 100 ? 'Perfect Score! 🏆' : pct >= 60 ? 'Great job! 👏' : 'Keep practicing! 💪'}
             </div>
 
+            <div className="results-meta">Attempt #{result.attemptNumber} • Total attempts: {totalAttempts}</div>
+
             <div className="results-stats">
               <div className="results-stat">
                 <div className="stat-val">{result.score}/{result.totalQuestions}</div>
@@ -129,6 +160,33 @@ const QuizPage = () => {
                 🔄 Retry Quiz
               </button>
             </div>
+
+            <div className="attempts-panel results-attempts">
+              <h3>Previous Attempts</h3>
+              {historyLoading ? (
+                <p className="attempts-empty">Loading attempt history...</p>
+              ) : attemptHistory.length === 0 ? (
+                <p className="attempts-empty">No attempts yet.</p>
+              ) : (
+                <div className="attempts-list">
+                  {attemptHistory.map((attempt) => {
+                    const attemptPct = formatAttemptPct(attempt);
+                    return (
+                      <div className="attempt-row" key={attempt._id}>
+                        <div className="attempt-left">
+                          <div className="attempt-title">Attempt #{attempt.attemptNumber}</div>
+                          <div className="attempt-time">{formatAttemptDate(attempt.completedAt || attempt.createdAt)}</div>
+                        </div>
+                        <div className="attempt-right">
+                          <div className="attempt-score">{attempt.score}/{attempt.totalQuestions}</div>
+                          <div className="attempt-pct">{attemptPct}%</div>
+                        </div>
+                      </div>
+                    );
+                  })}
+                </div>
+              )}
+            </div>
           </div>
         </div>
         {toast && <Toast message={toast.message} type={toast.type} onClose={() => setToast(null)} />}
@@ -144,7 +202,34 @@ const QuizPage = () => {
       <div className="quiz-container">
         <div className="quiz-header">
           <h1>{quiz.title}</h1>
-          <p>{questions.length} questions</p>
+          <p>{questions.length} questions • {historyLoading ? 'Loading attempts...' : `${totalAttempts} previous attempts`}</p>
+        </div>
+
+        <div className="attempts-panel">
+          <h3>Previous Attempts</h3>
+          {historyLoading ? (
+            <p className="attempts-empty">Loading attempt history...</p>
+          ) : attemptHistory.length === 0 ? (
+            <p className="attempts-empty">You have not attempted this quiz yet.</p>
+          ) : (
+            <div className="attempts-list">
+              {attemptHistory.slice(0, 5).map((attempt) => {
+                const attemptPct = formatAttemptPct(attempt);
+                return (
+                  <div className="attempt-row" key={attempt._id}>
+                    <div className="attempt-left">
+                      <div className="attempt-title">Attempt #{attempt.attemptNumber}</div>
+                      <div className="attempt-time">{formatAttemptDate(attempt.completedAt || attempt.createdAt)}</div>
+                    </div>
+                    <div className="attempt-right">
+                      <div className="attempt-score">{attempt.score}/{attempt.totalQuestions}</div>
+                      <div className="attempt-pct">{attemptPct}%</div>
+                    </div>
+                  </div>
+                );
+              })}
+            </div>
+          )}
         </div>
 
         <div className="quiz-progress-bar">

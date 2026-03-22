@@ -114,7 +114,8 @@ const LessonPlayer = () => {
     );
   }
 
-  const embedUrl = activeLesson?.videoUrl ? getEmbedUrl(activeLesson.videoUrl) : null;
+  const hasEmbeddableVideo = Boolean(activeLesson?.videoUrl && /(youtube\.com|youtu\.be|vimeo\.com)/i.test(activeLesson.videoUrl));
+  const embedUrl = hasEmbeddableVideo ? getEmbedUrl(activeLesson?.videoUrl) : null;
 
   return (
     <div className="lesson-player">
@@ -174,18 +175,32 @@ const LessonPlayer = () => {
             <>
               {/* Video player */}
               <div className="video-player-wrapper">
-                {embedUrl ? (
+                {activeLesson.type === 'video' && embedUrl ? (
                   <iframe
                     src={embedUrl}
                     title={activeLesson.title}
                     allowFullScreen
                     allow="accelerometer; autoplay; clipboard-write; encrypted-media; gyroscope; picture-in-picture"
                   />
-                ) : activeLesson.imageUrl ? (
+                ) : activeLesson.type === 'video' && activeLesson.videoUrl ? (
+                  <video
+                    controls
+                    style={{ position: 'absolute', inset: 0, width: '100%', height: '100%', objectFit: 'contain' }}
+                  >
+                    <source src={activeLesson.videoUrl} />
+                    Your browser does not support the video tag.
+                  </video>
+                ) : activeLesson.type === 'image' && activeLesson.imageUrl ? (
                   <img
                     src={activeLesson.imageUrl}
                     alt={activeLesson.title}
                     style={{ position: 'absolute', inset: 0, width: '100%', height: '100%', objectFit: 'contain' }}
+                  />
+                ) : activeLesson.type === 'document' && activeLesson.fileUrl ? (
+                  <iframe
+                    src={activeLesson.fileUrl}
+                    title={activeLesson.title}
+                    style={{ position: 'absolute', inset: 0, width: '100%', height: '100%', border: 'none' }}
                   />
                 ) : (
                   <div className="video-placeholder">
@@ -206,6 +221,43 @@ const LessonPlayer = () => {
                 </div>
                 {activeLesson.description && (
                   <p className="lesson-description">{activeLesson.description}</p>
+                )}
+                {activeLesson.type === 'document' && activeLesson.fileUrl && (
+                  <div style={{ marginBottom: '0.75rem' }}>
+                    <a
+                      href={activeLesson.fileUrl}
+                      target="_blank"
+                      rel="noreferrer"
+                      className="btn btn-secondary btn-sm"
+                      download={activeLesson.allowDownload ? '' : undefined}
+                    >
+                      ⬇️ Download Document
+                    </a>
+                  </div>
+                )}
+                {activeLesson.type === 'image' && activeLesson.imageUrl && (
+                  <div style={{ marginBottom: '0.75rem' }}>
+                    <a href={activeLesson.imageUrl} target="_blank" rel="noreferrer" className="btn btn-secondary btn-sm" download>
+                      ⬇️ Download Image
+                    </a>
+                  </div>
+                )}
+                {activeLesson.type === 'video' && activeLesson.videoUrl && !hasEmbeddableVideo && (
+                  <div style={{ marginBottom: '0.75rem' }}>
+                    <a href={activeLesson.videoUrl} target="_blank" rel="noreferrer" className="btn btn-secondary btn-sm" download>
+                      ⬇️ Download Video
+                    </a>
+                  </div>
+                )}
+                {Array.isArray(activeLesson.attachments) && activeLesson.attachments.length > 0 && (
+                  <div style={{ marginBottom: '0.75rem', display: 'flex', flexDirection: 'column', gap: '0.45rem' }}>
+                    <strong style={{ fontSize: '0.9rem' }}>Attachments</strong>
+                    {activeLesson.attachments.map((att) => (
+                      <a key={att._id || att.url} href={att.url} target="_blank" rel="noreferrer" className="btn btn-secondary btn-sm" download>
+                        📎 {att.name || 'Attachment'}
+                      </a>
+                    ))}
+                  </div>
                 )}
                 <div className="lesson-actions">
                   {getLessonStatus(activeLesson._id) !== 'completed' ? (

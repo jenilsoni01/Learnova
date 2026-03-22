@@ -3,9 +3,6 @@ import { useNavigate } from 'react-router-dom';
 import api from '../../api/axios';
 import Navbar from '../../components/common/Navbar';
 import Toast from '../../components/common/Toast';
-import useInfiniteScroll from '../../hooks/useInfiniteScroll';
-import LoadingSpinner from '../../components/common/LoadingSpinner';
-import EndMessage from '../../components/common/EndMessage';
 import './InstructorDashboard.css';
 
 const InstructorDashboard = () => {
@@ -16,6 +13,24 @@ const InstructorDashboard = () => {
   const [toast, setToast] = useState(null);
   const [search, setSearch] = useState('');
   const [debouncedSearch, setDebouncedSearch] = useState('');
+  const [courses, setCourses] = useState([]);
+  const [coursesLoading, setCoursesLoading] = useState(false);
+  const [currentPage, setCurrentPage] = useState(1);
+  const [limit, setLimit] = useState(5);
+  const [totalPages, setTotalPages] = useState(1);
+  const [pageInput, setPageInput] = useState('1');
+  const [isCreateModalOpen, setIsCreateModalOpen] = useState(false);
+  const [isCreatingCourse, setIsCreatingCourse] = useState(false);
+  const [createForm, setCreateForm] = useState({
+    title: '',
+    description: '',
+    tags: '',
+    websiteUrl: '',
+    visibility: 'everyone',
+    accessRule: 'open',
+    price: 0,
+    currency: 'INR',
+  });
 
   // Debounce search by 400ms
   useEffect(() => {
@@ -49,22 +64,38 @@ const InstructorDashboard = () => {
     fetchReport();
   }, []);
 
-  // Infinite scroll for courses
-  const fetchAdminCourses = useCallback(async (page) => {
-    const params = { page, limit: 10 };
-    if (debouncedSearch.trim()) params.search = debouncedSearch.trim();
-    const { data } = await api.get('/courses/admin', { params });
-    return data; // { data: [...], pagination: {...} }
-  }, [debouncedSearch]);
+  const fetchAdminCourses = useCallback(async () => {
+    try {
+      setCoursesLoading(true);
+      const params = { page: currentPage, limit };
+      if (debouncedSearch.trim()) params.search = debouncedSearch.trim();
+      const { data } = await api.get('/courses/admin', { params });
+      setCourses(Array.isArray(data?.data) ? data.data : []);
+      setTotalPages(data?.pagination?.totalPages || 1);
+    } catch {
+      setToast({ message: 'Failed to load courses', type: 'error' });
+    } finally {
+      setCoursesLoading(false);
+    }
+  }, [currentPage, debouncedSearch, limit]);
 
-  const { items: courses, isLoading: coursesLoading, hasMore, sentinelRef, reset } =
-    useInfiniteScroll(fetchAdminCourses, [debouncedSearch]);
+  useEffect(() => {
+    fetchAdminCourses();
+  }, [fetchAdminCourses]);
+
+  useEffect(() => {
+    setCurrentPage(1);
+  }, [debouncedSearch, limit]);
+
+  useEffect(() => {
+    setPageInput(String(currentPage));
+  }, [currentPage]);
 
   const handleTogglePublish = async (courseId) => {
     try {
       const res = await api.patch(`/courses/${courseId}/publish`);
       setToast({ message: `Course ${res.data.isPublished ? 'published' : 'unpublished'}!`, type: 'success' });
-      reset(); // Re-fetch from page 1
+      fetchAdminCourses();
     } catch (err) {
       setToast({ message: err.response?.data?.message || 'Failed to toggle publish', type: 'error' });
     }
@@ -75,9 +106,66 @@ const InstructorDashboard = () => {
     try {
       await api.delete(`/courses/${courseId}`);
       setToast({ message: 'Course deleted', type: 'success' });
-      reset(); // Re-fetch from page 1
+      fetchAdminCourses();
     } catch (err) {
       setToast({ message: err.response?.data?.message || 'Failed to delete course', type: 'error' });
+    }
+  };
+
+  const resetCreateForm = () => {
+    setCreateForm({
+      title: '',
+      description: '',
+      tags: '',
+      websiteUrl: '',
+      visibility: 'everyone',
+      accessRule: 'open',
+      price: 0,
+      currency: 'INR',
+    });
+  };
+
+  const handleCreateCourse = async (e) => {
+    e.preventDefault();
+
+    const trimmedTitle = createForm.title.trim();
+    if (!trimmedTitle) {
+      setToast({ message: 'Course title is required', type: 'error' });
+      return;
+    }
+
+    try {
+      setIsCreatingCourse(true);
+      const payload = {
+        title: trimmedTitle,
+        description: createForm.description.trim(),
+        websiteUrl: createForm.websiteUrl.trim(),
+        visibility: createForm.visibility,
+        accessRule: createForm.accessRule,
+        currency: (createForm.currency || 'INR').trim().toUpperCase(),
+        price:
+          createForm.accessRule === 'payment'
+            ? Math.max(0, Number(createForm.price) || 0)
+            : 0,
+        tags: createForm.tags
+          .split(',')
+          .map((tag) => tag.trim())
+          .filter(Boolean),
+      };
+
+      const { data } = await api.post('/courses', payload);
+      setToast({ message: 'Course created successfully', type: 'success' });
+      setIsCreateModalOpen(false);
+      resetCreateForm();
+      fetchAdminCourses();
+
+      if (data?._id) {
+        navigate(`/instructor/edit/${data._id}`);
+      }
+    } catch (err) {
+      setToast({ message: err.response?.data?.message || 'Failed to create course', type: 'error' });
+    } finally {
+      setIsCreatingCourse(false);
     }
   };
 
@@ -105,7 +193,7 @@ const InstructorDashboard = () => {
           <h1 className="gradient-text">Instructor Dashboard</h1>
           <p>Manage your courses and track student progress.</p>
           <div className="header-actions">
-            <button className="btn btn-primary" onClick={() => navigate('/instructor/create')}>
+            <button className="btn btn-primary" onClick={() => setIsCreateModalOpen(true)}>
               ➕ Create Course
             </button>
             <div className="view-toggle">
@@ -179,6 +267,7 @@ const InstructorDashboard = () => {
                   <th>Course</th>
                   <th>Status</th>
                   <th>Lessons</th>
+                  <th>Duration</th>
                   <th>Actions</th>
                 </tr>
               </thead>
@@ -197,8 +286,15 @@ const InstructorDashboard = () => {
                       </span>
                     </td>
                     <td>{course.lessonsCount ?? 0}</td>
+                    <td>{course.totalDurationMins ?? 0} min</td>
                     <td>
                       <div className="table-actions">
+                        <button
+                          className="btn btn-secondary btn-sm"
+                          onClick={() => navigate(`/courses/${course._id}`)}
+                        >
+                          👁 Preview
+                        </button>
                         <button
                           className="btn btn-secondary btn-sm"
                           onClick={() => navigate(`/instructor/edit/${course._id}`)}
@@ -243,8 +339,13 @@ const InstructorDashboard = () => {
                       <span className="value">{course.lessonsCount ?? 0}</span>
                       <span className="label">Lessons</span>
                     </div>
+                    <div className="stat">
+                      <span className="value">{course.totalDurationMins ?? 0}</span>
+                      <span className="label">Minutes</span>
+                    </div>
                   </div>
                   <div className="card-actions">
+                    <button className="btn btn-secondary btn-sm" onClick={() => navigate(`/courses/${course._id}`)}>👁 Preview</button>
                     <button className="btn btn-secondary btn-sm" onClick={() => navigate(`/instructor/edit/${course._id}`)}>✏️ Edit</button>
                     <button className="btn btn-secondary btn-sm" onClick={() => handleTogglePublish(course._id)}>
                       {course.isPublished ? '📤 Unpublish' : '📢 Publish'}
@@ -256,14 +357,186 @@ const InstructorDashboard = () => {
             </div>
           )}
 
-          {/* Sentinel + infinite scroll states */}
-          <div ref={sentinelRef} style={{ height: '1rem' }} />
-          {coursesLoading && courses.length > 0 && <LoadingSpinner />}
-          {!hasMore && courses.length > 0 && (
-            <EndMessage message="All courses loaded" />
-          )}
+          <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', marginTop: '1rem', gap: '0.75rem', flexWrap: 'wrap' }}>
+            <div style={{ display: 'flex', alignItems: 'center', gap: '0.4rem' }}>
+              <span style={{ fontSize: '0.85rem' }}>Per page</span>
+              <select
+                className="form-input"
+                style={{ width: '80px', padding: '0.45rem' }}
+                value={limit}
+                onChange={(e) => setLimit(Number(e.target.value))}
+              >
+                <option value={5}>5</option>
+                <option value={10}>10</option>
+                <option value={20}>20</option>
+              </select>
+            </div>
+
+            <div style={{ display: 'flex', alignItems: 'center', gap: '0.4rem' }}>
+              <button className="btn btn-secondary btn-sm" disabled={currentPage <= 1} onClick={() => setCurrentPage((p) => Math.max(1, p - 1))}>Prev</button>
+              <span style={{ fontSize: '0.85rem' }}>Page {currentPage} / {totalPages}</span>
+              <button className="btn btn-secondary btn-sm" disabled={currentPage >= totalPages} onClick={() => setCurrentPage((p) => Math.min(totalPages, p + 1))}>Next</button>
+            </div>
+
+            <div style={{ display: 'flex', alignItems: 'center', gap: '0.35rem' }}>
+              <input
+                className="form-input"
+                style={{ width: '70px', padding: '0.45rem' }}
+                value={pageInput}
+                onChange={(e) => setPageInput(e.target.value)}
+              />
+              <button
+                className="btn btn-primary btn-sm"
+                onClick={() => {
+                  const page = Math.max(1, Math.min(totalPages, Number(pageInput) || 1));
+                  setCurrentPage(page);
+                }}
+              >
+                Go
+              </button>
+            </div>
+          </div>
         </div>
       </div>
+
+      {isCreateModalOpen && (
+        <div className="modal-backdrop" onClick={() => !isCreatingCourse && setIsCreateModalOpen(false)}>
+          <div className="create-course-modal" onClick={(e) => e.stopPropagation()}>
+            <div className="modal-header">
+              <h2>Create New Course</h2>
+              <button
+                type="button"
+                className="modal-close"
+                onClick={() => !isCreatingCourse && setIsCreateModalOpen(false)}
+                aria-label="Close"
+              >
+                ✕
+              </button>
+            </div>
+
+            <form onSubmit={handleCreateCourse} className="modal-form">
+              <div className="form-group">
+                <label>Title *</label>
+                <input
+                  className="form-input"
+                  value={createForm.title}
+                  onChange={(e) => setCreateForm((prev) => ({ ...prev, title: e.target.value }))}
+                  placeholder="Enter course title"
+                  required
+                />
+              </div>
+
+              <div className="form-group">
+                <label>Description</label>
+                <textarea
+                  className="form-input"
+                  rows={3}
+                  value={createForm.description}
+                  onChange={(e) => setCreateForm((prev) => ({ ...prev, description: e.target.value }))}
+                  placeholder="Short description"
+                />
+              </div>
+
+              <div className="form-row">
+                <div className="form-group">
+                  <label>Visibility</label>
+                  <select
+                    className="form-input"
+                    value={createForm.visibility}
+                    onChange={(e) => setCreateForm((prev) => ({ ...prev, visibility: e.target.value }))}
+                  >
+                    <option value="everyone">Everyone</option>
+                    <option value="signed_in">Signed in users</option>
+                  </select>
+                </div>
+
+                <div className="form-group">
+                  <label>Access Rule</label>
+                  <select
+                    className="form-input"
+                    value={createForm.accessRule}
+                    onChange={(e) =>
+                      setCreateForm((prev) => ({
+                        ...prev,
+                        accessRule: e.target.value,
+                        price: e.target.value === 'payment' ? prev.price : 0,
+                      }))
+                    }
+                  >
+                    <option value="open">Open</option>
+                    <option value="invitation">Invitation</option>
+                    <option value="payment">Payment</option>
+                  </select>
+                </div>
+              </div>
+
+              {createForm.accessRule === 'payment' && (
+                <div className="form-row">
+                  <div className="form-group">
+                    <label>Price</label>
+                    <input
+                      className="form-input"
+                      type="number"
+                      min="0"
+                      step="1"
+                      value={createForm.price}
+                      onChange={(e) => setCreateForm((prev) => ({ ...prev, price: e.target.value }))}
+                    />
+                  </div>
+
+                  <div className="form-group">
+                    <label>Currency</label>
+                    <input
+                      className="form-input"
+                      value={createForm.currency}
+                      maxLength={5}
+                      onChange={(e) => setCreateForm((prev) => ({ ...prev, currency: e.target.value.toUpperCase() }))}
+                    />
+                  </div>
+                </div>
+              )}
+
+              <div className="form-group">
+                <label>Website URL</label>
+                <input
+                  className="form-input"
+                  value={createForm.websiteUrl}
+                  onChange={(e) => setCreateForm((prev) => ({ ...prev, websiteUrl: e.target.value }))}
+                  placeholder="https://example.com"
+                />
+              </div>
+
+              <div className="form-group">
+                <label>Tags (comma separated)</label>
+                <input
+                  className="form-input"
+                  value={createForm.tags}
+                  onChange={(e) => setCreateForm((prev) => ({ ...prev, tags: e.target.value }))}
+                  placeholder="javascript, react, backend"
+                />
+              </div>
+
+              <div className="modal-actions">
+                <button
+                  type="button"
+                  className="btn btn-secondary"
+                  onClick={() => {
+                    if (!isCreatingCourse) {
+                      setIsCreateModalOpen(false);
+                      resetCreateForm();
+                    }
+                  }}
+                >
+                  Cancel
+                </button>
+                <button type="submit" className="btn btn-primary" disabled={isCreatingCourse}>
+                  {isCreatingCourse ? 'Creating...' : 'Create Course'}
+                </button>
+              </div>
+            </form>
+          </div>
+        </div>
+      )}
 
       {toast && <Toast message={toast.message} type={toast.type} onClose={() => setToast(null)} />}
     </div>

@@ -5,7 +5,17 @@ import Navbar from '../../components/common/Navbar';
 import Toast from '../../components/common/Toast';
 import './CourseBuilder.css';
 
-const EMPTY_LESSON = { title: '', type: 'video', description: '', videoUrl: '', durationMins: 0 };
+const EMPTY_LESSON = {
+  title: '',
+  type: 'video',
+  description: '',
+  videoUrl: '',
+  fileUrl: '',
+  imageUrl: '',
+  allowDownload: false,
+  durationMins: 0,
+  attachments: []
+};
 const EMPTY_QUESTION = { text: '', options: [{ text: '', isCorrect: false }, { text: '', isCorrect: false }] };
 const EMPTY_QUIZ = { title: '', questions: [{ ...EMPTY_QUESTION }] };
 
@@ -17,6 +27,10 @@ const CourseBuilder = () => {
   const [toast, setToast] = useState(null);
   const [saving, setSaving] = useState(false);
   const [courseId, setCourseId] = useState(editId || null);
+  const [inviteEmails, setInviteEmails] = useState('');
+  const [inviting, setInviting] = useState(false);
+  const [invitationList, setInvitationList] = useState([]);
+  const [loadingInvites, setLoadingInvites] = useState(false);
 
   // Course data
   const [courseData, setCourseData] = useState({
@@ -60,6 +74,165 @@ const CourseBuilder = () => {
     load();
   }, [editId, isEdit]);
 
+  const activeCourseId = courseId || editId;
+
+  const fetchInvitations = async (targetCourseId) => {
+    if (!targetCourseId) return;
+    try {
+      setLoadingInvites(true);
+      const { data } = await api.get(`/enrollments/course/${targetCourseId}/invitations`);
+      setInvitationList(Array.isArray(data) ? data : []);
+    } catch {
+      setInvitationList([]);
+    } finally {
+      setLoadingInvites(false);
+    }
+  };
+
+  useEffect(() => {
+    if (courseData.accessRule === 'invitation' && activeCourseId) {
+      fetchInvitations(activeCourseId);
+    }
+  }, [courseData.accessRule, activeCourseId]);
+
+  const uploadCourseCover = async (file) => {
+    const fd = new FormData();
+    fd.append('coverImage', file);
+    const { data } = await api.post('/courses/upload/cover', fd);
+    return data.url;
+  };
+
+  const uploadLessonAsset = async (file) => {
+    const fd = new FormData();
+    fd.append('file', file);
+    const { data } = await api.post('/lessons/upload', fd);
+    return data;
+  };
+
+  const handleCoverFileChange = async (e) => {
+    const file = e.target.files?.[0];
+    if (!file) return;
+    try {
+      setSaving(true);
+      const url = await uploadCourseCover(file);
+      setCourseData(p => ({ ...p, coverImage: url }));
+      setToast({ message: 'Cover image uploaded', type: 'success' });
+    } catch (err) {
+      setToast({ message: err.response?.data?.message || 'Failed to upload cover image', type: 'error' });
+    } finally {
+      setSaving(false);
+      e.target.value = '';
+    }
+  };
+
+  const handleLessonFileUpload = async (e, targetField) => {
+    const file = e.target.files?.[0];
+    if (!file) return;
+    try {
+      setSaving(true);
+      const uploaded = await uploadLessonAsset(file);
+      setLessonForm(p => ({
+        ...p,
+        [targetField]: uploaded.url,
+        ...(targetField === 'videoUrl' && Number.isFinite(uploaded.durationMins)
+          ? { durationMins: uploaded.durationMins }
+          : {})
+      }));
+      setToast({ message: 'Lesson file uploaded', type: 'success' });
+    } catch (err) {
+      const status = err?.response?.status;
+      const message = err?.response?.data?.message || err?.message || 'Failed to upload lesson file';
+      setToast({ message: status ? `Upload failed (${status}): ${message}` : message, type: 'error' });
+    } finally {
+      setSaving(false);
+      e.target.value = '';
+    }
+  };
+
+  const handleAttachmentUpload = async (e) => {
+    const file = e.target.files?.[0];
+    if (!file) return;
+    try {
+      setSaving(true);
+      const uploaded = await uploadLessonAsset(file);
+      const newAttachment = {
+        type: 'file',
+        name: uploaded.originalName || uploaded.fileName,
+        url: uploaded.url
+      };
+      setLessonForm(p => ({ ...p, attachments: [...(p.attachments || []), newAttachment] }));
+      setToast({ message: 'Attachment uploaded', type: 'success' });
+    } catch (err) {
+      setToast({ message: err.response?.data?.message || 'Failed to upload attachment', type: 'error' });
+    } finally {
+      setSaving(false);
+      e.target.value = '';
+    }
+  };
+
+  const removeAttachment = (index) => {
+    setLessonForm(p => ({
+      ...p,
+      attachments: (p.attachments || []).filter((_, i) => i !== index)
+    }));
+  };
+
+  const handleSendInvites = async () => {
+    if (!activeCourseId) {
+      setToast({ message: 'Save course first before sending invites', type: 'error' });
+      return;
+    }
+
+    const emails = inviteEmails
+      .split(/[\n,;]+/)
+      .map((e) => e.trim())
+      .filter(Boolean);
+
+    if (emails.length === 0) {
+      setToast({ message: 'Enter at least one email', type: 'error' });
+      return;
+    }
+
+    try {
+      setInviting(true);
+      const { data } = await api.post(`/enrollments/${activeCourseId}/invite`, { emails });
+      const invitedCount = Array.isArray(data.invited) ? data.invited.length : 0;
+      const skippedCount = Array.isArray(data.skipped) ? data.skipped.length : 0;
+      setToast({
+        message: `Invites sent: ${invitedCount}${skippedCount ? `, skipped: ${skippedCount}` : ''}`,
+        type: 'success'
+      });
+      if (invitedCount > 0) setInviteEmails('');
+      fetchInvitations(activeCourseId);
+    } catch (err) {
+      setToast({ message: err.response?.data?.message || 'Failed to send invites', type: 'error' });
+    } finally {
+      setInviting(false);
+    }
+  };
+
+  const handleRevokeInvitation = async (invitationId) => {
+    if (!activeCourseId) return;
+    try {
+      await api.patch(`/enrollments/course/${activeCourseId}/invitations/${invitationId}/revoke`);
+      setToast({ message: 'Invitation revoked', type: 'success' });
+      fetchInvitations(activeCourseId);
+    } catch (err) {
+      setToast({ message: err.response?.data?.message || 'Failed to revoke invitation', type: 'error' });
+    }
+  };
+
+  const handleResendInvitation = async (invitationId) => {
+    if (!activeCourseId) return;
+    try {
+      await api.patch(`/enrollments/course/${activeCourseId}/invitations/${invitationId}/resend`);
+      setToast({ message: 'Invitation marked as re-sent', type: 'success' });
+      fetchInvitations(activeCourseId);
+    } catch (err) {
+      setToast({ message: err.response?.data?.message || 'Failed to resend invitation', type: 'error' });
+    }
+  };
+
   // Step 1: Save/update course
   const handleSaveCourse = async () => {
     if (!courseData.title.trim()) {
@@ -71,7 +244,7 @@ const CourseBuilder = () => {
       const payload = {
         ...courseData,
         tags: courseData.tags.split(',').map(t => t.trim()).filter(Boolean),
-        price: Number(courseData.price) || 0
+        price: courseData.accessRule === 'payment' ? (Number(courseData.price) || 0) : 0
       };
       if (isEdit || courseId) {
         await api.put(`/courses/${courseId}`, payload);
@@ -97,14 +270,19 @@ const CourseBuilder = () => {
     }
     try {
       setSaving(true);
-      const payload = { ...lessonForm, order: lessons.length + 1, durationMins: Number(lessonForm.durationMins) || 0 };
+      const payload = {
+        ...lessonForm,
+        order: editLessonId ? lessonForm.order || 1 : lessons.length + 1,
+        durationMins: Number(lessonForm.durationMins) || 0,
+        attachments: Array.isArray(lessonForm.attachments) ? lessonForm.attachments : []
+      };
       if (editLessonId) {
         const res = await api.put(`/lessons/${editLessonId}`, payload);
-        setLessons(prev => prev.map(l => l._id === editLessonId ? res.data : l));
+        setLessons(prev => prev.map(l => l._id === editLessonId ? { ...l, ...res.data, attachments: payload.attachments } : l));
         setToast({ message: 'Lesson updated', type: 'success' });
       } else {
         const res = await api.post(`/lessons/course/${courseId}`, payload);
-        setLessons(prev => [...prev, res.data]);
+        setLessons(prev => [...prev, { ...res.data, attachments: payload.attachments }]);
         setToast({ message: 'Lesson added', type: 'success' });
       }
       setLessonForm({ ...EMPTY_LESSON });
@@ -131,7 +309,11 @@ const CourseBuilder = () => {
     setLessonForm({
       title: lesson.title || '', type: lesson.type || 'video',
       description: lesson.description || '', videoUrl: lesson.videoUrl || '',
-      durationMins: lesson.durationMins || 0
+      fileUrl: lesson.fileUrl || '', imageUrl: lesson.imageUrl || '',
+      allowDownload: Boolean(lesson.allowDownload),
+      durationMins: lesson.durationMins || 0,
+      order: lesson.order || 1,
+      attachments: Array.isArray(lesson.attachments) ? lesson.attachments : []
     });
     setEditLessonId(lesson._id);
     setShowLessonForm(true);
@@ -264,6 +446,20 @@ const CourseBuilder = () => {
                 <label>Cover Image URL</label>
                 <input className="form-input" placeholder="https://..." value={courseData.coverImage}
                   onChange={e => setCourseData(p => ({ ...p, coverImage: e.target.value }))} />
+                <input
+                  className="form-input"
+                  type="file"
+                  accept="image/*"
+                  onChange={handleCoverFileChange}
+                  style={{ marginTop: '0.5rem' }}
+                />
+                {courseData.coverImage && (
+                  <img
+                    src={courseData.coverImage}
+                    alt="Course cover preview"
+                    style={{ marginTop: '0.5rem', maxWidth: '220px', borderRadius: '8px', border: '1px solid rgba(255,255,255,0.15)' }}
+                  />
+                )}
               </div>
               <div className="form-group">
                 <label>Tags (comma separated)</label>
@@ -309,10 +505,78 @@ const CourseBuilder = () => {
             </div>
             <div className="builder-nav" style={{ marginTop: '1.5rem' }}>
               <button className="btn btn-secondary" onClick={() => navigate('/instructor')}>Cancel</button>
-              <button className="btn btn-primary" onClick={handleSaveCourse} disabled={saving}>
-                {saving ? 'Saving...' : 'Save & Continue →'}
-              </button>
+              <div style={{ display: 'flex', gap: '0.5rem' }}>
+                {activeCourseId && (
+                  <button
+                    className="btn btn-secondary"
+                    onClick={() => window.open(`/courses/${activeCourseId}`, '_blank')}
+                  >
+                    👁️ Preview
+                  </button>
+                )}
+                <button className="btn btn-primary" onClick={handleSaveCourse} disabled={saving}>
+                  {saving ? 'Saving...' : 'Save & Continue →'}
+                </button>
+              </div>
             </div>
+
+            {courseData.accessRule === 'invitation' && (courseId || isEdit) && (
+              <div className="add-form" style={{ marginTop: '1rem' }}>
+                <h3 style={{ margin: 0 }}>Send Course Invites</h3>
+                <p style={{ margin: 0, color: 'var(--text)', fontSize: '0.85rem' }}>
+                  Add learner emails separated by comma or new line.
+                </p>
+                <textarea
+                  className="form-input"
+                  rows={4}
+                  placeholder="learner1@example.com, learner2@example.com"
+                  value={inviteEmails}
+                  onChange={(e) => setInviteEmails(e.target.value)}
+                />
+                <div className="add-form-actions">
+                  <button className="btn btn-primary btn-sm" onClick={handleSendInvites} disabled={inviting}>
+                    {inviting ? 'Sending...' : 'Send Invites'}
+                  </button>
+                </div>
+
+                <div style={{ marginTop: '0.8rem' }}>
+                  <h4 style={{ margin: '0 0 0.4rem 0' }}>Invited Learners</h4>
+                  {loadingInvites ? (
+                    <p style={{ margin: 0, fontSize: '0.85rem', color: 'var(--text)' }}>Loading invites...</p>
+                  ) : invitationList.length === 0 ? (
+                    <p style={{ margin: 0, fontSize: '0.85rem', color: 'var(--text)' }}>No invites sent yet.</p>
+                  ) : (
+                    <div style={{ display: 'flex', flexDirection: 'column', gap: '0.45rem' }}>
+                      {invitationList.map((inv) => (
+                        <div
+                          key={inv._id}
+                          style={{
+                            display: 'flex',
+                            alignItems: 'center',
+                            justifyContent: 'space-between',
+                            gap: '0.6rem',
+                            border: '1px solid rgba(255,255,255,0.1)',
+                            borderRadius: '10px',
+                            padding: '0.5rem 0.65rem'
+                          }}
+                        >
+                          <div style={{ minWidth: 0 }}>
+                            <div style={{ fontSize: '0.86rem', overflow: 'hidden', textOverflow: 'ellipsis' }}>{inv.email}</div>
+                            <div style={{ fontSize: '0.75rem', color: 'var(--text)', textTransform: 'capitalize' }}>
+                              Status: {inv.status}
+                            </div>
+                          </div>
+                          <div style={{ display: 'flex', gap: '0.35rem' }}>
+                            <button className="btn btn-secondary btn-sm" onClick={() => handleResendInvitation(inv._id)}>Resend</button>
+                            <button className="btn btn-danger btn-sm" onClick={() => handleRevokeInvitation(inv._id)}>Revoke</button>
+                          </div>
+                        </div>
+                      ))}
+                    </div>
+                  )}
+                </div>
+              </div>
+            )}
           </div>
         )}
 
@@ -364,14 +628,96 @@ const CourseBuilder = () => {
                   </div>
                 </div>
                 <div className="form-group">
-                  <label>Video URL</label>
-                  <input className="form-input" placeholder="YouTube or Vimeo URL" value={lessonForm.videoUrl}
-                    onChange={e => setLessonForm(p => ({ ...p, videoUrl: e.target.value }))} />
+                  <label>Lesson Asset</label>
+                  {lessonForm.type === 'video' && (
+                    <>
+                      <input className="form-input" placeholder="YouTube, Vimeo or direct video URL" value={lessonForm.videoUrl}
+                        onChange={e => setLessonForm(p => ({ ...p, videoUrl: e.target.value }))} />
+                      <input
+                        className="form-input"
+                        type="file"
+                        accept="video/*"
+                        onChange={(e) => handleLessonFileUpload(e, 'videoUrl')}
+                        style={{ marginTop: '0.5rem' }}
+                      />
+                      {lessonForm.videoUrl && (
+                        <a href={lessonForm.videoUrl} target="_blank" rel="noreferrer" style={{ display: 'inline-block', marginTop: '0.4rem' }}>
+                          Preview uploaded video
+                        </a>
+                      )}
+                    </>
+                  )}
+                  {lessonForm.type === 'document' && (
+                    <>
+                      <input className="form-input" placeholder="Document URL" value={lessonForm.fileUrl}
+                        onChange={e => setLessonForm(p => ({ ...p, fileUrl: e.target.value }))} />
+                      <input
+                        className="form-input"
+                        type="file"
+                        accept=".pdf,.doc,.docx,.ppt,.pptx,.xls,.xlsx,.txt,.zip"
+                        onChange={(e) => handleLessonFileUpload(e, 'fileUrl')}
+                        style={{ marginTop: '0.5rem' }}
+                      />
+                      <label style={{ display: 'flex', alignItems: 'center', gap: '0.4rem', marginTop: '0.5rem', fontSize: '0.85rem' }}>
+                        <input
+                          type="checkbox"
+                          checked={lessonForm.allowDownload}
+                          onChange={(e) => setLessonForm(p => ({ ...p, allowDownload: e.target.checked }))}
+                        />
+                        Allow document download
+                      </label>
+                      {lessonForm.fileUrl && (
+                        <a href={lessonForm.fileUrl} target="_blank" rel="noreferrer" style={{ display: 'inline-block', marginTop: '0.4rem' }}>
+                          Preview document
+                        </a>
+                      )}
+                    </>
+                  )}
+                  {lessonForm.type === 'image' && (
+                    <>
+                      <input className="form-input" placeholder="Image URL" value={lessonForm.imageUrl}
+                        onChange={e => setLessonForm(p => ({ ...p, imageUrl: e.target.value }))} />
+                      <input
+                        className="form-input"
+                        type="file"
+                        accept="image/*"
+                        onChange={(e) => handleLessonFileUpload(e, 'imageUrl')}
+                        style={{ marginTop: '0.5rem' }}
+                      />
+                      {lessonForm.imageUrl && (
+                        <img
+                          src={lessonForm.imageUrl}
+                          alt="Lesson preview"
+                          style={{ display: 'block', marginTop: '0.5rem', maxWidth: '260px', borderRadius: '8px', border: '1px solid rgba(255,255,255,0.15)' }}
+                        />
+                      )}
+                    </>
+                  )}
                 </div>
                 <div className="form-group">
                   <label>Description</label>
                   <textarea className="form-input" rows={2} placeholder="Lesson description" value={lessonForm.description}
                     onChange={e => setLessonForm(p => ({ ...p, description: e.target.value }))} />
+                </div>
+                <div className="form-group">
+                  <label>Attachments (optional)</label>
+                  <input
+                    className="form-input"
+                    type="file"
+                    onChange={handleAttachmentUpload}
+                  />
+                  {(lessonForm.attachments || []).length > 0 && (
+                    <div style={{ display: 'flex', flexDirection: 'column', gap: '0.35rem', marginTop: '0.6rem' }}>
+                      {lessonForm.attachments.map((att, index) => (
+                        <div key={`${att.url}-${index}`} style={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between', gap: '0.6rem', fontSize: '0.82rem' }}>
+                          <a href={att.url} target="_blank" rel="noreferrer" style={{ overflow: 'hidden', textOverflow: 'ellipsis', whiteSpace: 'nowrap' }}>
+                            {att.name || `Attachment ${index + 1}`}
+                          </a>
+                          <button type="button" className="btn btn-danger btn-sm" onClick={() => removeAttachment(index)}>Remove</button>
+                        </div>
+                      ))}
+                    </div>
+                  )}
                 </div>
                 <div className="add-form-actions">
                   <button className="btn btn-secondary btn-sm" onClick={() => { setShowLessonForm(false); setEditLessonId(null); }}>Cancel</button>

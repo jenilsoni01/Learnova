@@ -10,6 +10,7 @@ const CourseCard = ({ course, progress, showProgress = false }) => {
 
   const isFree = course.accessRule !== 'payment' || !course.price || course.price === 0;
   const coverImg = course.coverImage || '';
+  const totalDuration = Number(course.totalDurationMins) || 0;
 
   return (
     <div className="course-card" onClick={handleClick}>
@@ -38,6 +39,9 @@ const CourseCard = ({ course, progress, showProgress = false }) => {
         <div className="card-meta">
           <span className="card-meta-item">
             📚 {course.lessonsCount || 0} Lessons
+          </span>
+          <span className="card-meta-item">
+            ⏱️ {totalDuration} min
           </span>
           {course.accessRule && (
             <span className="card-meta-item" style={{ textTransform: 'capitalize' }}>

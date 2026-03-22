@@ -48,6 +48,9 @@ const Navbar = () => {
           {user && (
             <li><NavLink to="/my-learning" onClick={() => setMobileOpen(false)}>My Learning</NavLink></li>
           )}
+          {user && (
+            <li><NavLink to="/leaderboard" onClick={() => setMobileOpen(false)}>Leaderboard</NavLink></li>
+          )}
           {isInstructor && (
             <li><NavLink to="/instructor" onClick={() => setMobileOpen(false)}>Instructor</NavLink></li>
           )}
@@ -89,6 +92,13 @@ const Navbar = () => {
                     onClick={() => setDropdownOpen(false)}
                   >
                     📚 My Learning
+                  </Link>
+                  <Link 
+                    to="/leaderboard" 
+                    className="nav-dropdown-item"
+                    onClick={() => setDropdownOpen(false)}
+                  >
+                    🏆 Leaderboard
                   </Link>
                   {isInstructor && (
                     <Link 

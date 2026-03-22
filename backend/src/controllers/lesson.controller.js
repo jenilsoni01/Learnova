@@ -5,6 +5,21 @@
 
 import Lesson from '../models/Lesson.js';
 import Attachment from '../models/Attachment.js';
+import path from 'path';
+import { getDurationMinsFromFilePath, getDurationMinsFromPublicVideoUrl } from '../utils/videoDuration.utils.js';
+
+const toPublicFileUrl = (req, absoluteFilePath) => {
+  const publicRoot = path.resolve('public');
+  const relativeFilePath = path.relative(publicRoot, absoluteFilePath);
+  const publicPath = `/${relativeFilePath.replace(/\\/g, '/')}`;
+  return `${req.protocol}://${req.get('host')}${publicPath}`;
+};
+
+const inferKind = (mimeType = '') => {
+  if (mimeType.startsWith('video/')) return 'video';
+  if (mimeType.startsWith('image/')) return 'image';
+  return 'document';
+};
 
 export const getLessons = async (req, res) => {
   try {
@@ -28,6 +43,18 @@ export const getLessons = async (req, res) => {
 export const createLesson = async (req, res) => {
   try {
     const { attachments, ...lessonData } = req.body;
+
+    if (lessonData.type === 'video' && lessonData.videoUrl) {
+      try {
+        const autoDuration = await getDurationMinsFromPublicVideoUrl(lessonData.videoUrl);
+        if (Number.isFinite(autoDuration)) {
+          lessonData.durationMins = autoDuration;
+        }
+      } catch {
+        // Keep manually provided duration if probing fails.
+      }
+    }
+
     const lesson = await Lesson.create({
       ...lessonData,
       course: req.params.courseId,
@@ -52,6 +79,17 @@ export const createLesson = async (req, res) => {
 export const updateLesson = async (req, res) => {
   try {
     const { attachments, ...lessonData } = req.body;
+
+    if (lessonData.type === 'video' && lessonData.videoUrl) {
+      try {
+        const autoDuration = await getDurationMinsFromPublicVideoUrl(lessonData.videoUrl);
+        if (Number.isFinite(autoDuration)) {
+          lessonData.durationMins = autoDuration;
+        }
+      } catch {
+        // Keep manually provided duration if probing fails.
+      }
+    }
 
     const lesson = await Lesson.findByIdAndUpdate(req.params.id, lessonData, {
       new: true,
@@ -91,6 +129,35 @@ export const deleteLesson = async (req, res) => {
     await Attachment.deleteMany({ lesson: req.params.id });
 
     return res.json({ message: 'Lesson deleted' });
+  } catch (error) {
+    return res.status(500).json({ message: error.message });
+  }
+};
+
+export const uploadLessonAsset = async (req, res) => {
+  try {
+    if (!req.file?.path) {
+      return res.status(400).json({ message: 'File is required' });
+    }
+
+    let durationMins = null;
+    if (req.file.mimetype?.startsWith('video/')) {
+      try {
+        durationMins = await getDurationMinsFromFilePath(req.file.path);
+      } catch {
+        durationMins = null;
+      }
+    }
+
+    return res.status(201).json({
+      url: toPublicFileUrl(req, req.file.path),
+      fileName: req.file.filename,
+      originalName: req.file.originalname,
+      mimeType: req.file.mimetype,
+      size: req.file.size,
+      kind: inferKind(req.file.mimetype),
+      durationMins,
+    });
   } catch (error) {
     return res.status(500).json({ message: error.message });
   }

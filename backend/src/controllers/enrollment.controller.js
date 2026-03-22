@@ -6,6 +6,7 @@ import Razorpay from 'razorpay';
 import Enrollment from '../models/Enrollment.js';
 import Course from '../models/Course.js';
 import Payment from '../models/Payment.js';
+import { CourseInvitation } from '../models/CourseInvitation.js';
 import { computeCompletionPct } from '../utils/progress.utils.js';
 import { sendPaymentSuccessEmail } from '../utils/paymentMail.service.js';
 // ---------------------------------------------------------------------------
@@ -25,6 +26,13 @@ const generateReceiptId = () =>
 /** Returns true when a course requires payment. */
 const courseRequiresPayment = (course) =>
   course.accessRule === 'payment' && course.price > 0;
+
+const normalizeEmail = (email) => String(email || '').toLowerCase().trim();
+
+const ensureCanManageCourseInvites = (course, user) => {
+  if (user.role === 'admin') return true;
+  return String(course.createdBy) === String(user._id);
+};
 
 // ---------------------------------------------------------------------------
 // GET /enrollments/me
@@ -125,10 +133,37 @@ export const enrollCourse = async (req, res) => {
 
     // ── 3. Invitation-only gate ──────────────────────────────────────────
     if (course.accessRule === 'invitation') {
-      return res.status(403).json({
-        success: false,
-        message: 'This course is invitation-only',
-        requiresInvitation: true,
+      const invite = await CourseInvitation.findOne({
+        course: courseId,
+        email: String(req.user.email || '').toLowerCase().trim(),
+        status: { $in: ['pending', 'accepted'] },
+      });
+
+      if (!invite) {
+        return res.status(403).json({
+          success: false,
+          message: 'This course is invitation-only. Ask instructor for an invite.',
+          requiresInvitation: true,
+        });
+      }
+
+      const enrollment = await Enrollment.create({
+        course: courseId,
+        learner: req.user._id,
+        status: 'yet_to_start',
+      });
+
+      if (invite.status !== 'accepted') {
+        invite.status = 'accepted';
+        invite.acceptedAt = new Date();
+        await invite.save();
+      }
+
+      return res.status(201).json({
+        success: true,
+        enrolled: true,
+        enrollment,
+        message: 'Successfully enrolled using your invitation',
       });
     }
 
@@ -543,6 +578,214 @@ export const getCourseEnrollments = async (req, res) => {
       .sort('-enrolledAt');
 
     return res.json(enrollments);
+  } catch (error) {
+    return res.status(500).json({ message: error.message });
+  }
+};
+
+export const inviteLearnersToCourse = async (req, res) => {
+  try {
+    const { courseId } = req.params;
+    const incoming = Array.isArray(req.body?.emails) ? req.body.emails : [];
+    const emails = [...new Set(incoming
+      .map((e) => String(e || '').toLowerCase().trim())
+      .filter(Boolean))];
+
+    if (emails.length === 0) {
+      return res.status(400).json({ message: 'At least one valid email is required' });
+    }
+
+    const course = await Course.findById(courseId);
+    if (!course) {
+      return res.status(404).json({ message: 'Course not found' });
+    }
+
+    if (course.accessRule !== 'invitation') {
+      return res.status(400).json({ message: 'Invites can be sent only for invitation-only courses' });
+    }
+
+    if (!ensureCanManageCourseInvites(course, req.user)) {
+      return res.status(403).json({ message: 'Not authorized to invite learners to this course' });
+    }
+
+    const existing = await CourseInvitation.find({
+      course: courseId,
+      email: { $in: emails },
+      status: { $in: ['pending', 'accepted'] },
+    }).select('email').lean();
+
+    const existingSet = new Set(existing.map((i) => i.email));
+    const toCreate = emails.filter((email) => !existingSet.has(email));
+
+    if (toCreate.length > 0) {
+      await CourseInvitation.insertMany(
+        toCreate.map((email) => ({
+          course: courseId,
+          email,
+          invitedBy: req.user._id,
+          status: 'pending',
+        }))
+      );
+    }
+
+    return res.status(201).json({
+      message: 'Invitations processed',
+      invited: toCreate,
+      skipped: emails.filter((email) => existingSet.has(email)),
+    });
+  } catch (error) {
+    return res.status(500).json({ message: error.message });
+  }
+};
+
+export const getCourseInvitations = async (req, res) => {
+  try {
+    const { courseId } = req.params;
+    const course = await Course.findById(courseId);
+    if (!course) {
+      return res.status(404).json({ message: 'Course not found' });
+    }
+
+    if (!ensureCanManageCourseInvites(course, req.user)) {
+      return res.status(403).json({ message: 'Not authorized to view invitations for this course' });
+    }
+
+    const invitations = await CourseInvitation.find({ course: courseId })
+      .populate('invitedBy', 'name email')
+      .sort({ createdAt: -1 })
+      .lean();
+
+    return res.json(invitations);
+  } catch (error) {
+    return res.status(500).json({ message: error.message });
+  }
+};
+
+export const revokeCourseInvitation = async (req, res) => {
+  try {
+    const { courseId, invitationId } = req.params;
+    const course = await Course.findById(courseId);
+    if (!course) {
+      return res.status(404).json({ message: 'Course not found' });
+    }
+
+    if (!ensureCanManageCourseInvites(course, req.user)) {
+      return res.status(403).json({ message: 'Not authorized to revoke invitations for this course' });
+    }
+
+    const invitation = await CourseInvitation.findOne({ _id: invitationId, course: courseId });
+    if (!invitation) {
+      return res.status(404).json({ message: 'Invitation not found' });
+    }
+
+    invitation.status = 'revoked';
+    invitation.acceptedAt = undefined;
+    await invitation.save();
+
+    return res.json({ message: 'Invitation revoked', invitation });
+  } catch (error) {
+    return res.status(500).json({ message: error.message });
+  }
+};
+
+export const resendCourseInvitation = async (req, res) => {
+  try {
+    const { courseId, invitationId } = req.params;
+    const course = await Course.findById(courseId);
+    if (!course) {
+      return res.status(404).json({ message: 'Course not found' });
+    }
+
+    if (!ensureCanManageCourseInvites(course, req.user)) {
+      return res.status(403).json({ message: 'Not authorized to resend invitations for this course' });
+    }
+
+    const invitation = await CourseInvitation.findOne({ _id: invitationId, course: courseId });
+    if (!invitation) {
+      return res.status(404).json({ message: 'Invitation not found' });
+    }
+
+    invitation.status = 'pending';
+    invitation.acceptedAt = undefined;
+    await invitation.save();
+
+    return res.json({ message: 'Invitation marked as re-sent', invitation });
+  } catch (error) {
+    return res.status(500).json({ message: error.message });
+  }
+};
+
+export const getMyInvitations = async (req, res) => {
+  try {
+    const email = normalizeEmail(req.user.email);
+    const invitations = await CourseInvitation.find({
+      email,
+      status: { $in: ['pending', 'accepted'] },
+    })
+      .populate('course', 'title coverImage description tags accessRule price isPublished totalDurationMins')
+      .sort({ createdAt: -1 })
+      .lean();
+
+    const result = invitations
+      .filter((inv) => inv.course)
+      .map((inv) => ({
+        _id: inv._id,
+        status: inv.status,
+        invitedAt: inv.createdAt,
+        acceptedAt: inv.acceptedAt,
+        course: inv.course,
+      }));
+
+    return res.json(result);
+  } catch (error) {
+    return res.status(500).json({ message: error.message });
+  }
+};
+
+export const acceptMyInvitation = async (req, res) => {
+  try {
+    const { invitationId } = req.params;
+    const email = normalizeEmail(req.user.email);
+
+    const invitation = await CourseInvitation.findOne({ _id: invitationId, email });
+    if (!invitation) {
+      return res.status(404).json({ message: 'Invitation not found' });
+    }
+
+    if (invitation.status === 'revoked') {
+      return res.status(400).json({ message: 'This invitation is revoked' });
+    }
+
+    const course = await Course.findById(invitation.course);
+    if (!course || !course.isPublished) {
+      return res.status(400).json({ message: 'Course not available for enrollment' });
+    }
+
+    if (course.accessRule !== 'invitation') {
+      return res.status(400).json({ message: 'This course is no longer invitation-only' });
+    }
+
+    let enrollment = await Enrollment.findOne({
+      course: invitation.course,
+      learner: req.user._id,
+    });
+
+    if (!enrollment) {
+      enrollment = await Enrollment.create({
+        course: invitation.course,
+        learner: req.user._id,
+        status: 'yet_to_start',
+      });
+    }
+
+    invitation.status = 'accepted';
+    invitation.acceptedAt = invitation.acceptedAt || new Date();
+    await invitation.save();
+
+    return res.json({
+      message: 'Invitation accepted and enrollment completed',
+      enrollment,
+    });
   } catch (error) {
     return res.status(500).json({ message: error.message });
   }
