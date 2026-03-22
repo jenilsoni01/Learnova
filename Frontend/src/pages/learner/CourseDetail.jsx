@@ -182,11 +182,44 @@ const CourseDetail = () => {
             <h1>{course.title}</h1>
             <p className="course-desc">{course.description}</p>
             <div className="course-hero-meta">
-              <span>📚 {lessons.length || course.lessonsCount || 0} Lessons</span>
-              <span>⏱️ {course.totalDurationMins || 0} min</span>
-              {avgRating && <span>⭐ {avgRating} ({reviews.length} reviews)</span>}
-              {instructor && <span>👤 {instructor.name}</span>}
-              <span>👁️ {course.viewsCount || 0} views</span>
+              <span>
+                <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="1.5" strokeLinecap="round" strokeLinejoin="round" style={{ width: '16px', height: '16px', display: 'inline-block', verticalAlign: 'middle', marginRight: '6px' }}>
+                  <path d="M4 19.5A2.5 2.5 0 0 1 6.5 17H20"/>
+                  <path d="M6.5 2H20v20H6.5A2.5 2.5 0 0 1 4 19.5v-15A2.5 2.5 0 0 1 6.5 2z"/>
+                </svg>
+                {lessons.length || course.lessonsCount || 0} Lessons
+              </span>
+              <span>
+                <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="1.5" strokeLinecap="round" strokeLinejoin="round" style={{ width: '16px', height: '16px', display: 'inline-block', verticalAlign: 'middle', marginRight: '6px' }}>
+                  <circle cx="12" cy="12" r="10"/>
+                  <polyline points="12 6 12 12 16 14"/>
+                </svg>
+                {course.totalDurationMins || 0} min
+              </span>
+              {avgRating && (
+                <span>
+                  <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="1.5" strokeLinecap="round" strokeLinejoin="round" style={{ width: '16px', height: '16px', display: 'inline-block', verticalAlign: 'middle', marginRight: '6px' }}>
+                    <path d="M12 2L15.09 8.26L22 9.27L17 14.14L18.18 21.02L12 17.77L5.82 21.02L7 14.14L2 9.27L8.91 8.26L12 2Z"/>
+                  </svg>
+                  {avgRating} ({reviews.length} reviews)
+                </span>
+              )}
+              {instructor && (
+                <span>
+                  <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="1.5" strokeLinecap="round" strokeLinejoin="round" style={{ width: '16px', height: '16px', display: 'inline-block', verticalAlign: 'middle', marginRight: '6px' }}>
+                    <path d="M20 21v-2a4 4 0 0 0-4-4H8a4 4 0 0 0-4 4v2"/>
+                    <circle cx="12" cy="7" r="4"/>
+                  </svg>
+                  {instructor.name}
+                </span>
+              )}
+              <span>
+                <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="1.5" strokeLinecap="round" strokeLinejoin="round" style={{ width: '16px', height: '16px', display: 'inline-block', verticalAlign: 'middle', marginRight: '6px' }}>
+                  <path d="M1 12s4-8 11-8 11 8 11 8-4 8-11 8-11-8-11-8z"/>
+                  <circle cx="12" cy="12" r="3"/>
+                </svg>
+                {course.viewsCount || 0} views
+              </span>
             </div>
             <div className="course-hero-actions">
               {enrolled ? (
@@ -222,7 +255,17 @@ const CourseDetail = () => {
           <div className="course-main">
             {/* Syllabus */}
             <div className="detail-section">
-              <h2>📋 Syllabus</h2>
+              <h2>
+                <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="1.5" strokeLinecap="round" strokeLinejoin="round" style={{ width: '20px', height: '20px', display: 'inline-block', verticalAlign: 'middle', marginRight: '8px' }}>
+                  <rect width="8" height="4" x="8" y="2" rx="1" ry="1"/>
+                  <path d="M16 4h2a2 2 0 0 1 2 2v14a2 2 0 0 1-2 2H6a2 2 0 0 1-2-2V6a2 2 0 0 1 2-2h2"/>
+                  <path d="M12 11h4"/>
+                  <path d="M12 16h4"/>
+                  <path d="M8 11h.01"/>
+                  <path d="M8 16h.01"/>
+                </svg>
+                Syllabus
+              </h2>
               {lessons.length > 0 ? (
                 <ul className="syllabus-list">
                   {lessons.map((lesson, i) => (
@@ -246,7 +289,12 @@ const CourseDetail = () => {
 
             {/* Reviews */}
             <div className="detail-section">
-              <h2>⭐ Reviews {reviews.length > 0 && `(${reviews.length})`}</h2>
+              <h2>
+                <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="1.5" strokeLinecap="round" strokeLinejoin="round" style={{ width: '20px', height: '20px', display: 'inline-block', verticalAlign: 'middle', marginRight: '8px' }}>
+                  <path d="M12 2L15.09 8.26L22 9.27L17 14.14L18.18 21.02L12 17.77L5.82 21.02L7 14.14L2 9.27L8.91 8.26L12 2Z"/>
+                </svg>
+                Reviews {reviews.length > 0 && `(${reviews.length})`}
+              </h2>
               {reviews.length > 0 ? (
                 <div className="reviews-list">
                   {reviews.map(review => (
@@ -302,7 +350,15 @@ const CourseDetail = () => {
             {/* Instructor card */}
             {instructor && (
               <div className="detail-section">
-                <h2>👨‍🏫 Instructor</h2>
+                <h2>
+                  <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="1.5" strokeLinecap="round" strokeLinejoin="round" style={{ width: '20px', height: '20px', display: 'inline-block', verticalAlign: 'middle', marginRight: '8px' }}>
+                    <path d="M16 21v-2a4 4 0 0 0-4-4H6a4 4 0 0 0-4 4v2"/>
+                    <circle cx="9" cy="7" r="4"/>
+                    <path d="M22 21v-2a4 4 0 0 0-3-3.87"/>
+                    <path d="M16 3.13a4 4 0 0 1 0 7.75"/>
+                  </svg>
+                  Instructor
+                </h2>
                 <div className="instructor-card">
                   <div className="instructor-avatar">
                     {instructor.avatar
@@ -320,7 +376,14 @@ const CourseDetail = () => {
 
             {/* Course info */}
             <div className="detail-section">
-              <h2>ℹ️ Course Info</h2>
+              <h2>
+                <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="1.5" strokeLinecap="round" strokeLinejoin="round" style={{ width: '20px', height: '20px', display: 'inline-block', verticalAlign: 'middle', marginRight: '8px' }}>
+                  <circle cx="12" cy="12" r="10"/>
+                  <path d="M12 16v-4"/>
+                  <path d="M12 8h.01"/>
+                </svg>
+                Course Info
+              </h2>
               <div style={{ display: 'flex', flexDirection: 'column', gap: '0.75rem', fontSize: '0.9rem' }}>
                 <div style={{ display: 'flex', justifyContent: 'space-between' }}>
                   <span style={{ color: 'var(--text)' }}>Access</span>

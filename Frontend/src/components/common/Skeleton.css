@@ -1,16 +1,16 @@
 /* =========================================
-   Shimmering Skeleton Loader styles
+   Skeleton Loader — Odoo-Inspired Design
    ========================================= */
 
 .shimmer {
   background: linear-gradient(
     110deg,
-    rgba(255, 255, 255, 0.02) 40%,
-    rgba(255, 255, 255, 0.06) 50%,
-    rgba(255, 255, 255, 0.02) 60%
+    var(--bg-tertiary) 40%,
+    var(--border-light) 50%,
+    var(--bg-tertiary) 60%
   );
   background-size: 200% 100%;
-  animation: shine 1.6s infinite;
+  animation: shine 1.5s ease-in-out infinite;
 }
 
 @keyframes shine {
@@ -21,28 +21,29 @@
 /* Base Skeleton Line */
 .skeleton-line {
   height: 12px;
-  background: rgba(255, 255, 255, 0.03);
+  background: var(--bg-tertiary);
   border-radius: 6px;
   margin-bottom: 10px;
 }
 
-.skeleton-line.title { height: 18px; width: 60%; margin-bottom: 15px; }
+.skeleton-line.title { height: 18px; width: 65%; margin-bottom: 14px; }
 .skeleton-line.description { width: 90%; }
 .skeleton-line.description.short { width: 50%; }
 
 /* Skeleton Card (matches CourseCard) */
 .skeleton-card {
-  background: rgba(255, 255, 255, 0.015);
-  border: 1px solid rgba(255, 255, 255, 0.03);
-  border-radius: 16px;
+  background: white;
+  border: 1px solid var(--border-light);
+  border-radius: 12px;
   overflow: hidden;
   display: flex;
   flex-direction: column;
+  box-shadow: 0 1px 3px rgba(0, 0, 0, 0.04);
 }
 
 .skeleton-banner {
-  height: 150px;
-  background: rgba(255, 255, 255, 0.02);
+  height: 160px;
+  background: var(--bg-tertiary);
 }
 
 .skeleton-content {
@@ -56,14 +57,38 @@
   align-items: center;
   margin-top: auto;
   padding-top: 12px;
-  border-top: 1px solid rgba(255, 255, 255, 0.02);
+  border-top: 1px solid var(--border-light);
 }
 
-.skeleton-line.btn { width: 80px; height: 28px; border-radius: 8px; }
+.skeleton-line.btn { width: 80px; height: 32px; border-radius: 8px; }
 .skeleton-line.price { width: 50px; height: 14px; }
 
 /* Skeleton Circle */
 .skeleton-circle {
   border-radius: 50%;
-  background: rgba(255, 255, 255, 0.02);
+  background: var(--bg-tertiary);
+}
+
+/* Skeleton Avatar */
+.skeleton-avatar {
+  width: 40px;
+  height: 40px;
+  border-radius: 50%;
+  background: var(--bg-tertiary);
+}
+
+.skeleton-avatar.large {
+  width: 80px;
+  height: 80px;
+}
+
+/* Skeleton Text Blocks */
+.skeleton-text {
+  display: flex;
+  flex-direction: column;
+  gap: 8px;
+}
+
+.skeleton-text .skeleton-line:last-child {
+  margin-bottom: 0;
 }

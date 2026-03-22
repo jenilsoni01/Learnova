@@ -125,7 +125,15 @@ const LessonPlayer = () => {
         className="lesson-sidebar-toggle"
         onClick={() => setSidebarOpen(!sidebarOpen)}
       >
-        📋 Lessons
+        <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="1.5" strokeLinecap="round" strokeLinejoin="round" style={{ width: '16px', height: '16px', display: 'inline-block', verticalAlign: 'middle', marginRight: '6px' }}>
+          <rect width="8" height="4" x="8" y="2" rx="1" ry="1"/>
+          <path d="M16 4h2a2 2 0 0 1 2 2v14a2 2 0 0 1-2 2H6a2 2 0 0 1-2-2V6a2 2 0 0 1 2-2h2"/>
+          <path d="M12 11h4"/>
+          <path d="M12 16h4"/>
+          <path d="M8 11h.01"/>
+          <path d="M8 16h.01"/>
+        </svg>
+        Lessons
       </button>
 
       {sidebarOpen && (
@@ -155,7 +163,13 @@ const LessonPlayer = () => {
                   onClick={() => { setActiveLesson(lesson); setSidebarOpen(false); }}
                 >
                   <div className={`lesson-status-icon ${status}`}>
-                    {status === 'completed' ? '✓' : i + 1}
+                    {status === 'completed' ? (
+                      <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round" style={{ width: '12px', height: '12px' }}>
+                        <polyline points="20 6 9 17 4 12"/>
+                      </svg>
+                    ) : (
+                      i + 1
+                    )}
                   </div>
                   <div className="lesson-item-info">
                     <div className="lesson-item-title">{lesson.title}</div>
@@ -205,7 +219,23 @@ const LessonPlayer = () => {
                 ) : (
                   <div className="video-placeholder">
                     <div className="placeholder-icon">
-                      {activeLesson.type === 'document' ? '📄' : activeLesson.type === 'image' ? '🖼️' : '🎬'}
+                      {activeLesson.type === 'document' ? (
+                        <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="1.5" strokeLinecap="round" strokeLinejoin="round" style={{ width: '48px', height: '48px' }}>
+                          <path d="M14.5 2H6a2 2 0 0 0-2 2v16a2 2 0 0 0 2 2h12a2 2 0 0 0 2-2V7.5L14.5 2z"/>
+                          <polyline points="14 2 14 8 20 8"/>
+                        </svg>
+                      ) : activeLesson.type === 'image' ? (
+                        <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="1.5" strokeLinecap="round" strokeLinejoin="round" style={{ width: '48px', height: '48px' }}>
+                          <rect width="18" height="18" x="3" y="3" rx="2" ry="2"/>
+                          <circle cx="9" cy="9" r="2"/>
+                          <path d="M21 15l-3.086-3.086a2 2 0 0 0-2.828 0L6 21"/>
+                        </svg>
+                      ) : (
+                        <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="1.5" strokeLinecap="round" strokeLinejoin="round" style={{ width: '48px', height: '48px' }}>
+                          <polygon points="23 7 16 12 23 17 23 7"/>
+                          <rect width="14" height="14" x="1" y="5" rx="2" ry="2"/>
+                        </svg>
+                      )}
                     </div>
                     <p>{activeLesson.type === 'document' ? 'Document Lesson' : 'No video available for this lesson'}</p>
                   </div>
@@ -216,8 +246,21 @@ const LessonPlayer = () => {
               <div className="lesson-content-details">
                 <h2>{activeLesson.title}</h2>
                 <div className="lesson-content-meta">
-                  <span style={{ textTransform: 'capitalize' }}>📎 {activeLesson.type}</span>
-                  {activeLesson.durationMins > 0 && <span>⏱️ {activeLesson.durationMins} min</span>}
+                  <span style={{ textTransform: 'capitalize' }}>
+                    <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="1.5" strokeLinecap="round" strokeLinejoin="round" style={{ width: '16px', height: '16px', display: 'inline-block', verticalAlign: 'middle', marginRight: '6px' }}>
+                      <path d="M21.44 11.05l-9.19 9.19a6 6 0 0 1-8.49-8.49l9.19-9.19a4 4 0 0 1 5.66 5.66L9.64 16.2a2 2 0 0 1-2.83-2.83l8.49-8.49"/>
+                    </svg>
+                    {activeLesson.type}
+                  </span>
+                  {activeLesson.durationMins > 0 && (
+                    <span>
+                      <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="1.5" strokeLinecap="round" strokeLinejoin="round" style={{ width: '16px', height: '16px', display: 'inline-block', verticalAlign: 'middle', marginRight: '6px' }}>
+                        <circle cx="12" cy="12" r="10"/>
+                        <polyline points="12 6 12 12 16 14"/>
+                      </svg>
+                      {activeLesson.durationMins} min
+                    </span>
+                  )}
                 </div>
                 {activeLesson.description && (
                   <p className="lesson-description">{activeLesson.description}</p>
@@ -231,21 +274,36 @@ const LessonPlayer = () => {
                       className="btn btn-secondary btn-sm"
                       download={activeLesson.allowDownload ? '' : undefined}
                     >
-                      ⬇️ Download Document
+                      <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="1.5" strokeLinecap="round" strokeLinejoin="round" style={{ width: '16px', height: '16px', display: 'inline-block', verticalAlign: 'middle', marginRight: '6px' }}>
+                        <path d="M21 15v4a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2v-4"/>
+                        <polyline points="7 10 12 15 17 10"/>
+                        <line x1="12" y1="15" x2="12" y2="3"/>
+                      </svg>
+                      Download Document
                     </a>
                   </div>
                 )}
                 {activeLesson.type === 'image' && activeLesson.imageUrl && (
                   <div style={{ marginBottom: '0.75rem' }}>
                     <a href={activeLesson.imageUrl} target="_blank" rel="noreferrer" className="btn btn-secondary btn-sm" download>
-                      ⬇️ Download Image
+                      <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="1.5" strokeLinecap="round" strokeLinejoin="round" style={{ width: '16px', height: '16px', display: 'inline-block', verticalAlign: 'middle', marginRight: '6px' }}>
+                        <path d="M21 15v4a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2v-4"/>
+                        <polyline points="7 10 12 15 17 10"/>
+                        <line x1="12" y1="15" x2="12" y2="3"/>
+                      </svg>
+                      Download Image
                     </a>
                   </div>
                 )}
                 {activeLesson.type === 'video' && activeLesson.videoUrl && !hasEmbeddableVideo && (
                   <div style={{ marginBottom: '0.75rem' }}>
                     <a href={activeLesson.videoUrl} target="_blank" rel="noreferrer" className="btn btn-secondary btn-sm" download>
-                      ⬇️ Download Video
+                      <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="1.5" strokeLinecap="round" strokeLinejoin="round" style={{ width: '16px', height: '16px', display: 'inline-block', verticalAlign: 'middle', marginRight: '6px' }}>
+                        <path d="M21 15v4a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2v-4"/>
+                        <polyline points="7 10 12 15 17 10"/>
+                        <line x1="12" y1="15" x2="12" y2="3"/>
+                      </svg>
+                      Download Video
                     </a>
                   </div>
                 )}
@@ -254,7 +312,10 @@ const LessonPlayer = () => {
                     <strong style={{ fontSize: '0.9rem' }}>Attachments</strong>
                     {activeLesson.attachments.map((att) => (
                       <a key={att._id || att.url} href={att.url} target="_blank" rel="noreferrer" className="btn btn-secondary btn-sm" download>
-                        📎 {att.name || 'Attachment'}
+                        <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="1.5" strokeLinecap="round" strokeLinejoin="round" style={{ width: '16px', height: '16px', display: 'inline-block', verticalAlign: 'middle', marginRight: '6px' }}>
+                          <path d="M21.44 11.05l-9.19 9.19a6 6 0 0 1-8.49-8.49l9.19-9.19a4 4 0 0 1 5.66 5.66L9.64 16.2a2 2 0 0 1-2.83-2.83l8.49-8.49"/>
+                        </svg>
+                        {att.name || 'Attachment'}
                       </a>
                     ))}
                   </div>
@@ -262,11 +323,17 @@ const LessonPlayer = () => {
                 <div className="lesson-actions">
                   {getLessonStatus(activeLesson._id) !== 'completed' ? (
                     <button className="btn btn-primary" onClick={handleMarkComplete}>
-                      ✅ Mark as Complete
+                      <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round" style={{ width: '16px', height: '16px', display: 'inline-block', verticalAlign: 'middle', marginRight: '6px' }}>
+                        <polyline points="20 6 9 17 4 12"/>
+                      </svg>
+                      Mark as Complete
                     </button>
                   ) : (
                     <span className="tag" style={{ background: 'rgba(34,197,94,0.15)', color: '#4ade80', borderColor: 'rgba(34,197,94,0.3)' }}>
-                      ✓ Completed
+                      <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round" style={{ width: '14px', height: '14px', display: 'inline-block', verticalAlign: 'middle', marginRight: '6px' }}>
+                        <polyline points="20 6 9 17 4 12"/>
+                      </svg>
+                      Completed
                     </span>
                   )}
                 </div>
@@ -275,7 +342,13 @@ const LessonPlayer = () => {
               {/* Quiz section */}
               {quizzes.length > 0 && (
                 <div className="quiz-section">
-                  <h3>📝 Course Quizzes</h3>
+                  <h3>
+                    <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="1.5" strokeLinecap="round" strokeLinejoin="round" style={{ width: '20px', height: '20px', display: 'inline-block', verticalAlign: 'middle', marginRight: '8px' }}>
+                      <path d="M9 11l3 3L22 4"/>
+                      <path d="M21 12v7a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2V5a2 2 0 0 1 2-2h11"/>
+                    </svg>
+                    Course Quizzes
+                  </h3>
                   <div style={{ display: 'flex', flexDirection: 'column', gap: '0.5rem' }}>
                     {quizzes.map(quiz => (
                       <button
@@ -284,7 +357,11 @@ const LessonPlayer = () => {
                         onClick={() => navigate(`/quiz/${courseId}/${quiz._id}`)}
                         style={{ justifyContent: 'flex-start' }}
                       >
-                        📝 {quiz.title} ({quiz.questions?.length || 0} questions)
+                        <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="1.5" strokeLinecap="round" strokeLinejoin="round" style={{ width: '16px', height: '16px', display: 'inline-block', verticalAlign: 'middle', marginRight: '6px' }}>
+                          <path d="M9 11l3 3L22 4"/>
+                          <path d="M21 12v7a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2V5a2 2 0 0 1 2-2h11"/>
+                        </svg>
+                        {quiz.title} ({quiz.questions?.length || 0} questions)
                       </button>
                     ))}
                   </div>
@@ -293,7 +370,12 @@ const LessonPlayer = () => {
             </>
           ) : (
             <div className="lesson-empty">
-              <div className="empty-icon">📚</div>
+              <div className="empty-icon">
+                <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="1.5" strokeLinecap="round" strokeLinejoin="round" style={{ width: '48px', height: '48px' }}>
+                  <path d="M4 19.5A2.5 2.5 0 0 1 6.5 17H20"/>
+                  <path d="M6.5 2H20v20H6.5A2.5 2.5 0 0 1 4 19.5v-15A2.5 2.5 0 0 1 6.5 2z"/>
+                </svg>
+              </div>
               <h3>No lessons available</h3>
               <p>This course doesn't have any lessons yet.</p>
             </div>

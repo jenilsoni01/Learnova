@@ -135,7 +135,10 @@ const CoursesDashboard = () => {
           <p>Discover courses crafted by top instructors and start learning today.</p>
           <div className="dashboard-controls">
             <div className="dashboard-search">
-              <span className="search-icon">🔍</span>
+              <svg className="search-icon" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round">
+                <circle cx="11" cy="11" r="8"/>
+                <path d="m21 21-4.35-4.35"/>
+              </svg>
               <input
                 value={search}
                 onChange={e => setSearch(e.target.value)}
@@ -217,7 +220,12 @@ const CoursesDashboard = () => {
             </div>
           ) : filteredCourses.length === 0 && !isLoading ? (
             <div className="empty-state">
-              <div className="empty-icon">📚</div>
+              <div className="empty-icon">
+                <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="1.5" strokeLinecap="round" strokeLinejoin="round">
+                  <path d="M4 19.5A2.5 2.5 0 0 1 6.5 17H20"/>
+                  <path d="M6.5 2H20v20H6.5A2.5 2.5 0 0 1 4 19.5v-15A2.5 2.5 0 0 1 6.5 2z"/>
+                </svg>
+              </div>
               <h3>No courses found</h3>
               <p>{search || categoryFilter ? 'Try a different search term or category.' : 'Check back later for new courses!'}</p>
             </div>
@@ -280,7 +288,11 @@ const CoursesDashboard = () => {
             className="mobile-bio-btn"
             onClick={() => setIsProfileOpen(!isProfileOpen)}
           >
-            👤 Profile
+            <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round">
+              <path d="M20 21v-2a4 4 0 0 0-4-4H8a4 4 0 0 0-4 4v2"/>
+              <circle cx="12" cy="7" r="4"/>
+            </svg>
+            <span>Profile</span>
           </button>
         )}
 

@@ -16,10 +16,6 @@ const courseSchema = new mongoose.Schema({
   tags: [ 
     { type: String } 
   ],
-  websiteUrl: { 
-    type: String, 
-    default: '' 
-  },
   isPublished: { 
     type: Boolean, 
     default: false 
