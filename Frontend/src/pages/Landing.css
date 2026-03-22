@@ -460,7 +460,10 @@
 }
 
 .landing .section-header {
-  text-align: center;
+  display: flex;
+  flex-direction: column;
+  align-items:  flex-start;
+  text-align: left;
   margin-bottom: 4rem;
 }
 
@@ -487,9 +490,10 @@
 
 .landing .section-subtitle {
   color: var(--text);
+  text-align: left;
   font-size: 1.125rem;
   max-width: 500px;
-  margin: 0 auto;
+  margin: 0 0;
 }
 
 .landing .features-grid {

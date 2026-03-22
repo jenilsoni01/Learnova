@@ -587,15 +587,7 @@ const InstructorDashboard = () => {
                 </div>
               )}
 
-              <div className="form-group">
-                <label>Website URL</label>
-                <input
-                  className="form-input"
-                  value={createForm.websiteUrl}
-                  onChange={(e) => setCreateForm((prev) => ({ ...prev, websiteUrl: e.target.value }))}
-                  placeholder="https://example.com"
-                />
-              </div>
+              
 
               <div className="form-group">
                 <label>Tags (comma separated)</label>

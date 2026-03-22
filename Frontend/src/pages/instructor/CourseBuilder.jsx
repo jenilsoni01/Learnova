@@ -35,7 +35,7 @@ const CourseBuilder = () => {
   // Course data
   const [courseData, setCourseData] = useState({
     title: '', description: '', coverImage: '', tags: '',
-    accessRule: 'open', visibility: 'everyone', price: 0, websiteUrl: ''
+    accessRule: 'open', visibility: 'everyone', price: 0
   });
 
   // Lessons
@@ -63,7 +63,7 @@ const CourseBuilder = () => {
         setCourseData({
           title: c.title || '', description: c.description || '', coverImage: c.coverImage || '',
           tags: (c.tags || []).join(', '), accessRule: c.accessRule || 'open',
-          visibility: c.visibility || 'everyone', price: c.price || 0, websiteUrl: c.websiteUrl || ''
+          visibility: c.visibility || 'everyone', price: c.price || 0
         });
         setLessons(Array.isArray(lessonsRes.data) ? lessonsRes.data : []);
         setQuizzes(Array.isArray(quizzesRes.data) ? quizzesRes.data : []);
@@ -502,11 +502,6 @@ const CourseBuilder = () => {
                   <option value="everyone">Everyone</option>
                   <option value="signed_in">Signed In Users</option>
                 </select>
-              </div>
-              <div className="form-group full-width">
-                <label>Website URL</label>
-                <input className="form-input" placeholder="https://..." value={courseData.websiteUrl}
-                  onChange={e => setCourseData(p => ({ ...p, websiteUrl: e.target.value }))} />
               </div>
             </div>
             <div className="builder-nav" style={{ marginTop: '1.5rem' }}>

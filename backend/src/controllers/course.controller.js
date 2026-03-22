@@ -274,10 +274,6 @@ export const togglePublish = async (req, res) => {
       return res.status(403).json({ message: 'Not authorized to publish this course' });
     }
 
-    if (!course.isPublished && !course.websiteUrl?.trim()) {
-      return res.status(400).json({ message: 'Website URL required before publishing' });
-    }
-
     course.isPublished = !course.isPublished;
     await course.save();
 
