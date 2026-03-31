@@ -12,6 +12,7 @@ const probeDurationSeconds = (filePath) =>
         '-of', 'default=noprint_wrappers=1:nokey=1',
         filePath,
       ],
+      { timeout: 15000 },
       (error, stdout) => {
         if (error) return reject(error);
         const durationSeconds = Number.parseFloat(String(stdout || '').trim());

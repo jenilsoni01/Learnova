@@ -25,19 +25,29 @@ export const AuthProvider = ({ children }) => {
 
   const login = async (email, password) => {
     const response = await api.post('/auth/login', { email, password });
+    if (response.data?.data?.token) {
+      localStorage.setItem('token', response.data.data.token);
+    }
     setUser(response.data.data.user); 
     return response.data;
   };
 
   const register = async (formData) => {
     const response = await api.post('/auth/register', formData);
+    if (response.data?.data?.token) {
+      localStorage.setItem('token', response.data.data.token);
+    }
     setUser(response.data.data.user); 
     return response.data
   };
 
   const logout = async () => {
-    const response = await api.post('/auth/logout');
-    
+    try {
+      await api.post('/auth/logout');
+    } catch {
+      // Ignore network errors on logout
+    }
+    localStorage.removeItem('token');
     setUser(null);
   };
 
