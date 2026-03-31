@@ -12,10 +12,13 @@ import { sendPaymentSuccessEmail } from '../utils/paymentMail.service.js';
 // ---------------------------------------------------------------------------
 // Razorpay instance (shared, created once)
 // ---------------------------------------------------------------------------
-const razorpay = new Razorpay({
-  key_id: process.env.RAZORPAY_KEY_ID,
-  key_secret: process.env.RAZORPAY_KEY_SECRET,
-});
+let razorpay = null;
+if (process.env.RAZORPAY_KEY_ID && process.env.RAZORPAY_KEY_SECRET) {
+  razorpay = new Razorpay({
+    key_id: process.env.RAZORPAY_KEY_ID,
+    key_secret: process.env.RAZORPAY_KEY_SECRET,
+  });
+}
 
 // ---------------------------------------------------------------------------
 // Helpers
@@ -210,6 +213,10 @@ export const enrollCourse = async (req, res) => {
 
       // make payment 
       
+      if (!razorpay) {
+        return res.status(500).json({ success: false, message: 'Razorpay is not configured on this server' });
+      }
+
       const options = {
         amount: pendingPayment.amount * 100, // paise
         currency: pendingPayment.currency,
@@ -242,6 +249,10 @@ export const enrollCourse = async (req, res) => {
     }
 
     // ── 7. Create a fresh Razorpay order ─────────────────────────────────
+    if (!razorpay) {
+      return res.status(500).json({ success: false, message: 'Razorpay is not configured on this server' });
+    }
+
     const receipt = generateReceiptId();
     const amountInPaise = Math.round(course.price * 100);
 
