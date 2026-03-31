@@ -33,12 +33,9 @@ const getDurationMinsFromFilePath = async (filePath) => {
 const getDurationMinsFromPublicVideoUrl = async (videoUrl) => {
   if (!videoUrl) return null;
 
-  const parsed = new URL(videoUrl, 'http://localhost');
-  if (!parsed.pathname.startsWith('/uploads/videos/')) return null;
-
-  const relativePath = parsed.pathname.replace(/^\//, '').split('/').join(path.sep);
-  const absolutePath = path.resolve('public', relativePath);
-  const seconds = await probeDurationSeconds(absolutePath);
+  // With S3 integration, all video URLs are remote and public
+  // ffprobe can natively analyze public URLs over an HTTP stream
+  const seconds = await probeDurationSeconds(videoUrl);
   return toMins(seconds);
 };
 

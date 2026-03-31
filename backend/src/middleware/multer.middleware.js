@@ -1,8 +1,15 @@
 import multer from "multer";
-import fs from "fs";
 import path from "path";
+import multerS3 from "multer-s3";
+import { S3Client } from "@aws-sdk/client-s3";
 
-const uploadsRoot = path.resolve("public", "uploads");
+const s3 = new S3Client({
+  region: process.env.AWS_REGION,
+  credentials: {
+    accessKeyId: process.env.AWS_ACCESS_KEY_ID,
+    secretAccessKey: process.env.AWS_SECRET_ACCESS_KEY,
+  },
+});
 
 const inferFolder = (file) => {
   if (file.fieldname === "avatar") return "avatars";
@@ -12,26 +19,21 @@ const inferFolder = (file) => {
   return "documents";
 };
 
-const ensureDir = (dirPath) => {
-  if (!fs.existsSync(dirPath)) {
-    fs.mkdirSync(dirPath, { recursive: true });
-  }
-};
-
 const sanitizeBaseName = (name) =>
   name.replace(/\.[^/.]+$/, "").replace(/[^a-zA-Z0-9_-]/g, "-").slice(0, 50);
 
-const storage = multer.diskStorage({
-  destination: function (req, file, cb) {
-    const folder = inferFolder(file);
-    const targetDir = path.join(uploadsRoot, folder);
-    ensureDir(targetDir);
-    cb(null, targetDir);
+const storage = multerS3({
+  s3: s3,
+  bucket: process.env.AWS_S3_BUCKET_NAME || 'learnova',
+  acl: "public-read",
+  metadata: function (req, file, cb) {
+    cb(null, { fieldName: file.fieldname });
   },
-  filename: function (req, file, cb) {
+  key: function (req, file, cb) {
+    const folder = inferFolder(file);
     const ext = path.extname(file.originalname || "").toLowerCase();
     const safeName = sanitizeBaseName(file.originalname || "file");
-    cb(null, `${Date.now()}-${safeName}${ext}`);
+    cb(null, `${folder}/${Date.now()}-${safeName}${ext}`);
   },
 });
 

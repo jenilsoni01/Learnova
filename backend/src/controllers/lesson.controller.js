@@ -8,12 +8,7 @@ import Attachment from '../models/Attachment.js';
 import path from 'path';
 import { getDurationMinsFromFilePath, getDurationMinsFromPublicVideoUrl } from '../utils/videoDuration.utils.js';
 
-const toPublicFileUrl = (req, absoluteFilePath) => {
-  const publicRoot = path.resolve('public');
-  const relativeFilePath = path.relative(publicRoot, absoluteFilePath);
-  const publicPath = `/${relativeFilePath.replace(/\\/g, '/')}`;
-  return `${req.protocol}://${req.get('host')}${publicPath}`;
-};
+
 
 const inferKind = (mimeType = '') => {
   if (mimeType.startsWith('video/')) return 'video';
@@ -136,26 +131,27 @@ export const deleteLesson = async (req, res) => {
 
 export const uploadLessonAsset = async (req, res) => {
   try {
-    if (!req.file?.path) {
+    if (!req.file?.location) {
       return res.status(400).json({ message: 'File is required' });
     }
 
     let durationMins = null;
-    if (req.file.mimetype?.startsWith('video/')) {
+    const contentType = req.file.contentType || req.file.mimetype;
+    if (contentType?.startsWith('video/')) {
       try {
-        durationMins = await getDurationMinsFromFilePath(req.file.path);
+        durationMins = await getDurationMinsFromFilePath(req.file.location);
       } catch {
         durationMins = null;
       }
     }
 
     return res.status(201).json({
-      url: toPublicFileUrl(req, req.file.path),
-      fileName: req.file.filename,
+      url: req.file.location,
+      fileName: req.file.key || req.file.filename,
       originalName: req.file.originalname,
-      mimeType: req.file.mimetype,
+      mimeType: contentType,
       size: req.file.size,
-      kind: inferKind(req.file.mimetype),
+      kind: inferKind(contentType),
       durationMins,
     });
   } catch (error) {

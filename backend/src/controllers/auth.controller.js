@@ -15,16 +15,6 @@ import { asyncHandler } from '../utils/asyncHandler.js';
 import { ApiError } from '../utils/ApiError.js';
 import { ApiResponse } from '../utils/ApiResponse.js';
 
-const cleanupTempFile = (filePath) => {
-  if (!filePath) return;
-  try {
-    if (fs.existsSync(filePath)) {
-      fs.unlinkSync(filePath);
-    }
-  } catch {
-    // Ignore cleanup errors to avoid breaking auth flow.
-  }
-};
 
 // Global Cookie Options
 const cookieOptions = {
@@ -44,14 +34,11 @@ const register = asyncHandler(async (req, res) => {
   const { name, email, password } = req.body;
   let avatar = '';
 
-  // Early validations - if these fail, we MUST delete the file if it was uploaded
   if (!name || !email || !password) {
-    if (req.file) cleanupTempFile(req.file.path);
     throw new ApiError(400, 'Name, email, and password are required');
   }
 
   if (password.length < 8) {
-    if (req.file) cleanupTempFile(req.file.path);
     throw new ApiError(400, 'Password must be at least 8 characters long');
   }
 
@@ -59,16 +46,12 @@ const register = asyncHandler(async (req, res) => {
 
   const existingUser = await User.findOne({ email: normalizedEmail });
   if (existingUser) {
-    if (req.file) cleanupTempFile(req.file.path);
     throw new ApiError(400, 'Email already exists');
   }
 
   // Handle File Upload
   if (req.file) {
-    const publicRoot = path.resolve('public');
-    const relativeFilePath = path.relative(publicRoot, req.file.path);
-    const publicPath = `/${relativeFilePath.replace(/\\/g, '/')}`;
-    avatar = `${req.protocol}://${req.get('host')}${publicPath}`;
+    avatar = req.file.location;
   }
 
   // Create User
